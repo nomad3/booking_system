@@ -1,45 +1,60 @@
-README.md
-Proyecto Aremko Booking System
-Este es un sistema de reservas y ventas para Aremko, construido con Django y Docker. Incluye funcionalidades para manejar pagos parciales y distintos métodos de pago.
 
-Tabla de Contenidos
-Requisitos Previos
-Configuración en Ambiente Local
-1. Clonar el Repositorio
-2. Configurar Variables de Entorno
-3. Construir y Levantar los Contenedores
-4. Aplicar Migraciones y Crear Superusuario
-5. Acceder a la Aplicación
-Configuración en Ambiente de Producción
-1. Configurar Servidor
-2. Configurar Variables de Entorno para Producción
-3. Construir y Levantar los Contenedores en Modo Producción
-4. Configurar Servidor Web (Opcional)
-Variables de Entorno
-Comandos Útiles
-Notas Adicionales
-Requisitos Previos
-Docker y Docker Compose instalados en el sistema.
-Git para clonar el repositorio.
-Opcional: Conocimientos básicos de Python y Django.
-Configuración en Ambiente Local
-1. Clonar el Repositorio
+# README.md
+
+# Proyecto Aremko Booking System
+
+Este es un sistema de reservas y ventas para **Aremko**, construido con **Django** y **Docker**. Incluye funcionalidades para manejar pagos parciales y distintos métodos de pago.
+
+## Tabla de Contenidos
+
+- [Requisitos Previos](#requisitos-previos)
+- [Configuración en Ambiente Local](#configuración-en-ambiente-local)
+  - [1. Clonar el Repositorio](#1-clonar-el-repositorio)
+  - [2. Configurar Variables de Entorno](#2-configurar-variables-de-entorno)
+  - [3. Construir y Levantar los Contenedores](#3-construir-y-levantar-los-contenedores)
+  - [4. Aplicar Migraciones y Crear Superusuario](#4-aplicar-migraciones-y-crear-superusuario)
+  - [5. Acceder a la Aplicación](#5-acceder-a-la-aplicación)
+- [Configuración en Ambiente de Producción](#configuración-en-ambiente-de-producción)
+  - [1. Configurar Servidor](#1-configurar-servidor)
+  - [2. Configurar Variables de Entorno para Producción](#2-configurar-variables-de-entorno-para-producción)
+  - [3. Construir y Levantar los Contenedores en Modo Producción](#3-construir-y-levantar-los-contenedores-en-modo-producción)
+  - [4. Configurar Servidor Web (Opcional)](#4-configurar-servidor-web-opcional)
+- [Variables de Entorno](#variables-de-entorno)
+- [Comandos Útiles](#comandos-útiles)
+- [Notas Adicionales](#notas-adicionales)
+
+---
+
+## Requisitos Previos
+
+- **Docker** y **Docker Compose** instalados en el sistema.
+- **Git** para clonar el repositorio.
+- Opcional: Conocimientos básicos de Python y Django.
+
+---
+
+## Configuración en Ambiente Local
+
+### 1. Clonar el Repositorio
+
 Clona el repositorio del proyecto a tu máquina local:
 
-bash
-Copiar código
+```bash
 git clone https://github.com/tu_usuario/aremko_booking_system.git
 cd aremko_booking_system
-2. Configurar Variables de Entorno
-Crea un archivo .env en el directorio raíz del proyecto:
+```
 
-bash
-Copiar código
+### 2. Configurar Variables de Entorno
+
+Crea un archivo `.env` en el directorio raíz del proyecto:
+
+```bash
 touch .env
-Agrega las siguientes variables al archivo .env:
+```
 
-env
-Copiar código
+Agrega las siguientes variables al archivo `.env`:
+
+```env
 # Variables de Django
 SECRET_KEY=tu_clave_secreta
 DEBUG=True
@@ -56,41 +71,56 @@ OPENAI_API_KEY=tu_api_key_de_openai
 
 # Otros
 ALLOWED_HOSTS=*
-3. Construir y Levantar los Contenedores
+```
+
+### 3. Construir y Levantar los Contenedores
+
 Ejecuta el siguiente comando para construir las imágenes y levantar los contenedores:
 
-bash
-Copiar código
+```bash
 docker compose up --build
-4. Aplicar Migraciones y Crear Superusuario
+```
+
+### 4. Aplicar Migraciones y Crear Superusuario
+
 En otra terminal, aplica las migraciones:
 
-bash
-Copiar código
+```bash
 docker compose exec web python manage.py migrate
+```
+
 Crea un superusuario para acceder al panel de administración:
 
-bash
-Copiar código
+```bash
 docker compose exec web python manage.py createsuperuser
+```
+
 Sigue las instrucciones para establecer el nombre de usuario y la contraseña.
 
-5. Acceder a la Aplicación
-Aplicación Web: Visita http://localhost:8000/ en tu navegador.
-Panel de Administración: Visita http://localhost:8000/admin/ e inicia sesión con el superusuario.
-Configuración en Ambiente de Producción
-1. Configurar Servidor
-Sistema Operativo: Se recomienda un servidor con Linux (Ubuntu, Debian, etc.).
-Instalar Docker y Docker Compose:
-bash
-Copiar código
+### 5. Acceder a la Aplicación
+
+- **Aplicación Web:** Visita `http://localhost:8000/` en tu navegador.
+- **Panel de Administración:** Visita `http://localhost:8000/admin/` e inicia sesión con el superusuario.
+
+---
+
+## Configuración en Ambiente de Producción
+
+### 1. Configurar Servidor
+
+- **Sistema Operativo:** Se recomienda un servidor con Linux (Ubuntu, Debian, etc.).
+- **Instalar Docker y Docker Compose:**
+
+```bash
 sudo apt update
 sudo apt install docker.io docker-compose
-2. Configurar Variables de Entorno para Producción
-En el servidor, crea un archivo .env con las variables adecuadas:
+```
 
-env
-Copiar código
+### 2. Configurar Variables de Entorno para Producción
+
+En el servidor, crea un archivo `.env` con las variables adecuadas:
+
+```env
 # Variables de Django
 SECRET_KEY=una_clave_secreta_segura
 DEBUG=False
@@ -107,14 +137,17 @@ OPENAI_API_KEY=tu_api_key_de_openai
 
 # Otros
 ALLOWED_HOSTS=tu_dominio.com
-3. Construir y Levantar los Contenedores en Modo Producción
-En producción, es recomendable utilizar un servidor de aplicaciones como Gunicorn y un servidor web como Nginx.
+```
 
-Actualizar Dockerfile para Producción
-Modifica el Dockerfile para utilizar Gunicorn:
+### 3. Construir y Levantar los Contenedores en Modo Producción
 
-dockerfile
-Copiar código
+En producción, es recomendable utilizar un servidor de aplicaciones como **Gunicorn** y un servidor web como **Nginx**.
+
+#### Actualizar `Dockerfile` para Producción
+
+Modifica el `Dockerfile` para utilizar Gunicorn:
+
+```dockerfile
 # Usar una imagen base ligera
 FROM python:3.9-slim
 
@@ -139,22 +172,29 @@ EXPOSE 8000
 
 # Comando de inicio
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "aremko_project.wsgi:application"]
-Levantar los Contenedores
-bash
-Copiar código
+```
+
+#### Levantar los Contenedores
+
+```bash
 docker compose up --build -d
-4. Configurar Servidor Web (Opcional)
-Para servir la aplicación en el puerto 80 o 443, puedes utilizar Nginx como proxy inverso.
+```
 
-Instalar Nginx
-bash
-Copiar código
+### 4. Configurar Servidor Web (Opcional)
+
+Para servir la aplicación en el puerto 80 o 443, puedes utilizar **Nginx** como proxy inverso.
+
+#### Instalar Nginx
+
+```bash
 sudo apt install nginx
-Configurar Nginx
-Crea un archivo de configuración para tu sitio en /etc/nginx/sites-available/aremko:
+```
 
-nginx
-Copiar código
+#### Configurar Nginx
+
+Crea un archivo de configuración para tu sitio en `/etc/nginx/sites-available/aremko`:
+
+```nginx
 server {
     listen 80;
     server_name tu_dominio.com;
@@ -165,54 +205,70 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
     }
 }
+```
+
 Habilita el sitio y reinicia Nginx:
 
-bash
-Copiar código
+```bash
 sudo ln -s /etc/nginx/sites-available/aremko /etc/nginx/sites-enabled/
 sudo systemctl restart nginx
-Variables de Entorno
-SECRET_KEY: Clave secreta de Django. Debe ser segura y no compartirse.
-DEBUG: Establecer en False en producción.
-POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD: Credenciales de la base de datos.
-DB_HOST, DB_PORT: Configuración de conexión a la base de datos.
-OPENAI_API_KEY: Clave de API para OpenAI, si es utilizada.
-ALLOWED_HOSTS: Lista de dominios o direcciones IP permitidas.
-Comandos Útiles
-Aplicar migraciones:
+```
 
-bash
-Copiar código
-docker compose exec web python manage.py migrate
-Crear superusuario:
+---
 
-bash
-Copiar código
-docker compose exec web python manage.py createsuperuser
-Ver logs de los contenedores:
+## Variables de Entorno
 
-bash
-Copiar código
-docker compose logs -f
-Detener contenedores:
+- **SECRET_KEY:** Clave secreta de Django. Debe ser segura y no compartirse.
+- **DEBUG:** Establecer en `False` en producción.
+- **POSTGRES_DB**, **POSTGRES_USER**, **POSTGRES_PASSWORD:** Credenciales de la base de datos.
+- **DB_HOST**, **DB_PORT:** Configuración de conexión a la base de datos.
+- **OPENAI_API_KEY:** Clave de API para OpenAI, si es utilizada.
+- **ALLOWED_HOSTS:** Lista de dominios o direcciones IP permitidas.
 
-bash
-Copiar código
-docker compose down
-Notas Adicionales
-Seguridad:
+---
 
-Asegúrate de no subir el archivo .env al repositorio.
-En producción, utiliza HTTPS configurando certificados SSL con Let's Encrypt.
-Persistencia de Datos:
+## Comandos Útiles
 
-Los datos de la base de datos se almacenan en un volumen Docker llamado postgres_data.
-Asegúrate de realizar backups periódicos de la base de datos.
-Actualizaciones:
+- **Aplicar migraciones:**
 
-Cuando realices cambios en el código o dependencias, reconstruye las imágenes y reinicia los contenedores:
+  ```bash
+  docker compose exec web python manage.py migrate
+  ```
 
-bash
-Copiar código
-docker compose build
-docker compose up -d
+- **Crear superusuario:**
+
+  ```bash
+  docker compose exec web python manage.py createsuperuser
+  ```
+
+- **Ver logs de los contenedores:**
+
+  ```bash
+  docker compose logs -f
+  ```
+
+- **Detener contenedores:**
+
+  ```bash
+  docker compose down
+  ```
+
+---
+
+## Notas Adicionales
+
+- **Seguridad:**
+  - Asegúrate de **no subir** el archivo `.env` al repositorio.
+  - En producción, utiliza **HTTPS** configurando certificados SSL con **Let's Encrypt**.
+
+- **Persistencia de Datos:**
+  - Los datos de la base de datos se almacenan en un volumen Docker llamado `postgres_data`.
+  - Asegúrate de realizar backups periódicos de la base de datos.
+
+- **Actualizaciones:**
+  - Cuando realices cambios en el código o dependencias, reconstruye las imágenes y reinicia los contenedores:
+
+    ```bash
+    docker compose build
+    docker compose up -d
+    ```
