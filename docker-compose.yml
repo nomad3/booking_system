@@ -1,0 +1,27 @@
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-aremko_db}
+      - POSTGRES_USER=${POSTGRES_USER:-aremko_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-aremko_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    restart: always
+
+volumes:
+  postgres_data:
