@@ -66,9 +66,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('POSTGRES_DB', 'aremko_db'),
-        'USER': os.environ.get('POSTGRES_USER', 'aremko_user'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'aremko_password'),
-        'HOST': os.environ.get('DB_HOST', 'db'),
+        'USER': os.environ.get('POSTGRES_USER', 'aremko_db_user'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', '0tqNOT3N2gWQKjX5dLNsw1Pn6TDDP71x'),
+        'HOST': os.environ.get('DB_HOST', 'dpg-crqumfd6l47c73caget0-a.oregon-postgres.render.com'),
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }

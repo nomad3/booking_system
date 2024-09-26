@@ -31,15 +31,34 @@ class Producto(models.Model):
     def __str__(self):
         return self.nombre
 
-    def obtener_precio_actual(self):
-        ahora = timezone.now()
-        precios_dinamicos = PrecioDinamico.objects.filter(
-            producto=self,
-            fecha_inicio__lte=ahora,
-            fecha_fin__gte=ahora
-        )
-        if precios_dinamicos.exists():
-            return precios_dinamicos.first().precio
+    
+    def obtener_precio_actual(self, fecha_reserva=None):
+        if not fecha_reserva:
+            fecha_reserva = timezone.now()
+        else:
+            # Asegurarse de que fecha_reserva es un objeto datetime
+            if isinstance(fecha_reserva, str):
+                fecha_reserva = timezone.datetime.fromisoformat(fecha_reserva)
+
+        # Convertir fecha_reserva a zona horaria activa
+        fecha_reserva = timezone.make_aware(fecha_reserva, timezone.get_current_timezone())
+
+        # Filtrar reglas que aplican al producto
+        reglas = PrecioDinamico.objects.filter(producto=self)
+
+        # Filtrar reglas que aplican en base a la fecha y hora
+        reglas = reglas.filter(
+            Q(fecha_inicio__isnull=True) | Q(fecha_inicio__lte=fecha_reserva.date()),
+            Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=fecha_reserva.date()),
+            Q(hora_inicio__isnull=True) | Q(hora_inicio__lte=fecha_reserva.time()),
+            Q(hora_fin__isnull=True) | Q(hora_fin__gte=fecha_reserva.time()),
+            Q(dia_semana__isnull=True) | Q(dia_semana=fecha_reserva.isoweekday()),
+            Q(mes__isnull=True) | Q(mes=fecha_reserva.month)
+        ).order_by('-prioridad')
+
+        if reglas.exists():
+            # Tomar la regla con mayor prioridad
+            return reglas.first().precio
         return self.precio_base
 
 class PrecioDinamico(models.Model):
@@ -64,7 +83,7 @@ class Reserva(models.Model):
     def save(self, *args, **kwargs):
         if self.producto.cantidad_disponible < self.cantidad:
             raise ValueError('Cantidad no disponible')
-        super().save(*args, **kwargs)
+        super(Reserva, self).save(*args, **kwargs)
         if self.producto.es_reservable:
             from .utils import crear_evento_calendar
             crear_evento_calendar(self)
