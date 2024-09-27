@@ -62,7 +62,7 @@ class Producto(models.Model):
 
 class PrecioDinamico(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='precios_dinamicos')
-    nombre_regla = models.CharField(max_length=100)
+    nombre_regla = models.CharField(max_length=255, default='Regla Predeterminada')  # O usa null=True, blank=True
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     prioridad = models.PositiveIntegerField(default=0)  # Mayor número, mayor prioridad
     hora_inicio = models.TimeField(null=True, blank=True)
