@@ -76,6 +76,7 @@ DATABASES = {
 }
 
 # Configuraciones adicionales...
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 LANGUAGE_CODE = 'es-cl'
 TIME_ZONE = 'America/Santiago'
 USE_I18N = True
