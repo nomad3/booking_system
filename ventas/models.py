@@ -4,6 +4,15 @@ from datetime import timedelta
 from django.db.models import Q 
 from django.core.exceptions import ValidationError  
 
+class Cliente(models.Model):
+    nombre = models.CharField(max_length=255)
+    correo_electronico = models.EmailField(unique=True)
+    telefono = models.CharField(max_length=20, blank=True, null=True)
+    direccion = models.TextField(blank=True, null=True)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.nombre} ({self.correo_electronico})"
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=255)
     contacto = models.CharField(max_length=255, null=True, blank=True)
@@ -126,7 +135,7 @@ class Reserva(models.Model):
 
 class Venta(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    cliente = models.CharField(max_length=255)
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='ventas')
     cantidad = models.PositiveIntegerField(default=1)
     fecha_venta = models.DateTimeField(auto_now_add=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
@@ -166,8 +175,17 @@ class Venta(models.Model):
         super(Venta, self).save(*args, **kwargs)
 
     def __str__(self):
-        return f'Venta #{self.id} - {self.producto.nombre}'
+        return f"Venta {self.id} - Cliente: {self.cliente.nombre}"
 
+class MovimientoCliente(models.Model):
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='movimientos')
+    tipo_movimiento = models.CharField(max_length=100)
+    descripcion = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.tipo_movimiento} - {self.fecha.strftime('%Y-%m-%d %H:%M')}"
+    
 class Pago(models.Model):
     venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='pagos')
     fecha_pago = models.DateTimeField(auto_now_add=True)
