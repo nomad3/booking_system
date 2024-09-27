@@ -6,8 +6,7 @@ set -e
 # Función para extraer DB_HOST y DB_PORT de DATABASE_URL usando Python
 extract_db_host_port() {
     # Usar Python para parsear DATABASE_URL y extraer host y port
-    eval "$(python -c "
-import os
+    eval "$(python -c "import os
 from urllib.parse import urlparse
 
 database_url = os.getenv('DATABASE_URL')
@@ -26,7 +25,13 @@ if not db_host or not db_port:
 
 print(f'DB_HOST={db_host}')
 print(f'DB_PORT={db_port}')
-")
+")"
+
+    # Verificar que DB_HOST y DB_PORT fueron extraídos correctamente
+    if [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ]; then
+        echo "Error: No se pudo extraer DB_HOST y DB_PORT de DATABASE_URL."
+        exit 1
+    fi
 }
 
 # Extraer DB_HOST y DB_PORT
