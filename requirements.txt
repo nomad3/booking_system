@@ -8,3 +8,4 @@ requests==2.28.1  # Para la integración con ManyChat
 djangorestframework==3.14.0  # Django REST Framework
 gunicorn
 openai
+dj-database-url>=0.5.0
