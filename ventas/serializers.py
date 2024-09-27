@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Proveedor, CategoriaProducto, Producto, Reserva, Venta
+from .models import Proveedor, CategoriaProducto, Producto, Reserva, Venta, Pago, Cliente, ReservaProducto
 
 class ProveedorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,21 +12,40 @@ class CategoriaProductoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ProductoSerializer(serializers.ModelSerializer):
-    precio_actual = serializers.SerializerMethodField()
-
     class Meta:
         model = Producto
         fields = '__all__'
 
-    def get_precio_actual(self, obj):
-        return obj.obtener_precio_actual()
+class ReservaProductoSerializer(serializers.ModelSerializer):
+    producto = ProductoSerializer()
+
+    class Meta:
+        model = ReservaProducto
+        fields = ['producto', 'cantidad']
 
 class ReservaSerializer(serializers.ModelSerializer):
+    productos = ReservaProductoSerializer(source='reservaprodutos', many=True)
+    cliente = serializers.StringRelatedField()
+    pagos = serializers.StringRelatedField(many=True)
+
     class Meta:
         model = Reserva
-        fields = '__all__'
+        fields = ['id', 'cliente', 'productos', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado', 'pagos']
 
 class VentaSerializer(serializers.ModelSerializer):
+    pagos = serializers.StringRelatedField(many=True)
+    cliente = serializers.StringRelatedField()
+
     class Meta:
         model = Venta
+        fields = ['id', 'cliente', 'total', 'pagado', 'saldo_pendiente', 'fecha_venta', 'pagos']
+
+class PagoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pago
+        fields = '__all__'
+
+class ClienteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cliente
         fields = '__all__'

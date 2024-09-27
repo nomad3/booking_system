@@ -3,13 +3,14 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from .models import Proveedor, CategoriaProducto, Producto, Reserva, Venta
+from .models import Proveedor, CategoriaProducto, Producto, Reserva, Venta, Pago
 from .serializers import (
     ProveedorSerializer,
     CategoriaProductoSerializer,
     ProductoSerializer,
     ReservaSerializer,
-    VentaSerializer
+    VentaSerializer,
+    PagoSerializer
 )
 import openai
 import os
@@ -40,7 +41,7 @@ def manychat_webhook(request):
     cliente = data.get('cliente')
     producto_id = data.get('producto_id')
     cantidad = int(data.get('cantidad', 1))
-    fecha_reserva = data.get('fecha_reserva')  # Formato ISO 8601
+    fecha_reserva = data.get('fecha_reserva')
 
     try:
         producto = Producto.objects.get(id=producto_id)
@@ -89,12 +90,10 @@ def manychat_chatgpt_webhook(request):
 
         # Añadir lógica para procesar reservas
         if 'reservar' in user_message.lower():
-            # Intentar extraer información relevante usando ChatGPT
             extraction_prompt = (
                 f"Extrae la siguiente información del mensaje del cliente y devuélvela en formato JSON:\n"
                 f"Mensaje: \"{user_message}\"\n"
                 f"Información requerida: fecha_reserva, tipo_servicio, cantidad\n"
-                f"Si falta algún dato, usa null.\n\n"
                 f"Respuesta en JSON:"
             )
             extraction_response = openai.Completion.create(
@@ -110,15 +109,12 @@ def manychat_chatgpt_webhook(request):
             import json
             try:
                 info = json.loads(extracted_info)
-                # Validar que tenemos la información necesaria
                 if info.get('fecha_reserva') and info.get('tipo_servicio') and info.get('cantidad'):
-                    # Buscar el producto
                     producto = Producto.objects.filter(nombre__icontains=info['tipo_servicio']).first()
                     if producto:
-                        # Crear la reserva
                         reserva = Reserva.objects.create(
                             producto=producto,
-                            cliente=user_id,  # Aquí podrías mapear el user_id a un cliente real
+                            cliente=user_id,
                             cantidad=int(info['cantidad']),
                             fecha_reserva=info['fecha_reserva']
                         )
@@ -130,16 +126,6 @@ def manychat_chatgpt_webhook(request):
             except json.JSONDecodeError:
                 chatgpt_reply += "\n\nNo pude entender tu solicitud de reserva. ¿Podrías proporcionar más detalles?"
 
-        # Devolver respuesta a ManyChat
-        return Response({
-            'messages': [
-                {'text': chatgpt_reply}
-            ]
-        })
+        return Response({'messages': [{'text': chatgpt_reply}]})
     except Exception as e:
-        # Manejo de errores
-        return Response({
-            'messages': [
-                {'text': "Lo siento, hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo más tarde."}
-            ]
-        }, status=500)
+        return Response({'messages': [{'text': "Lo siento, hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo más tarde."}]}, status=500)

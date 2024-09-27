@@ -1,5 +1,3 @@
-# ventas/signals.py
-
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from .models import Venta, Cliente, MovimientoCliente, Pago, Reserva
@@ -76,7 +74,7 @@ def registrar_movimiento_pago(sender, instance, created, **kwargs):
 def registrar_movimiento_reserva(sender, instance, created, **kwargs):
     if created:
         tipo = 'Creación de Reserva'
-        descripcion = f"Se ha creado una reserva para el producto {instance.producto.nombre} por el cliente {instance.cliente.nombre} desde {instance.fecha_inicio} hasta {instance.fecha_fin}."
+        descripcion = f"Se ha creado una reserva para el producto {instance.producto.nombre} por el cliente {instance.cliente.nombre} desde {instance.fecha_reserva}."
     else:
         tipo = 'Actualización de Reserva'
         descripcion = f"Se ha actualizado la reserva {instance.id} para el producto {instance.producto.nombre} por el cliente {instance.cliente.nombre}."

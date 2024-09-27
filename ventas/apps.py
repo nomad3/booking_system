@@ -7,4 +7,4 @@ class VentasConfig(AppConfig):
     name = 'ventas'
 
     def ready(self):
-        import ventas.signals  # Importa las señales para que se conecten
+        import ventas.signals
