@@ -5,7 +5,7 @@ version: '3.8'
 services:
   web:
     build: .
-    command: gunicorn booking_system.wsgi:application --bind 0.0.0.0:${PORT}
+    command: gunicorn aremko_project.wsgi:application --bind 0.0.0.0:${PORT}
     ports:
       - "8000:8000"  # Para desarrollo local
     env_file:

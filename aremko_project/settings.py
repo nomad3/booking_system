@@ -8,7 +8,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Secret key y debug obtenidos de variables de entorno
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG') == 'True'
-
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
 ALLOWED_HOSTS = ['*']  
 
 # Aplicaciones instaladas
