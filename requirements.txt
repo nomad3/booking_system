@@ -9,3 +9,4 @@ djangorestframework==3.14.0  # Django REST Framework
 gunicorn
 openai
 dj-database-url>=0.5.0
+whitenoise
