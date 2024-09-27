@@ -16,10 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar el código de la aplicación
 COPY . .
 
-# Realizar migraciones y recolectar archivos estáticos
-RUN python manage.py migrate
-RUN python manage.py collectstatic --noinput
-
 # Exponer el puerto que usará la aplicación (Render asigna el puerto via variable de entorno PORT)
 EXPOSE 8000
 
