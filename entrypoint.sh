@@ -21,4 +21,4 @@ python manage.py migrate
 
 # Iniciar Gunicorn para servir la aplicación
 echo "Iniciando Gunicorn en el puerto $PORT..."
-exec gunicorn aremko_project.wsgi:application --bind 0.0.0.0:"$PORT"
+exec gunicorn aremko_project.wsgi:application --bind 0.0.0.0:${PORT}
