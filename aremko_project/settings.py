@@ -8,13 +8,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Secret key y debug obtenidos de variables de entorno
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG') == 'True'
+
+# Configuraciones de seguridad
 SECURE_SSL_REDIRECT = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
-ALLOWED_HOSTS = ['*']  
+
+# ALLOWED_HOSTS configurado a partir de variable de entorno
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 # Aplicaciones instaladas
 INSTALLED_APPS = [
@@ -40,7 +44,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
 
 ROOT_URLCONF = 'aremko_project.urls'
 
