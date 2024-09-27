@@ -1,274 +1,399 @@
-
-# README.md
-
-# Proyecto Aremko Booking System
-
-Este es un sistema de reservas y ventas para **Aremko**, construido con **Django** y **Docker**. Incluye funcionalidades para manejar pagos parciales y distintos métodos de pago.
+```markdown
+# Booking System
 
 ## Tabla de Contenidos
-
-- [Requisitos Previos](#requisitos-previos)
-- [Configuración en Ambiente Local](#configuración-en-ambiente-local)
-  - [1. Clonar el Repositorio](#1-clonar-el-repositorio)
-  - [2. Configurar Variables de Entorno](#2-configurar-variables-de-entorno)
-  - [3. Construir y Levantar los Contenedores](#3-construir-y-levantar-los-contenedores)
-  - [4. Aplicar Migraciones y Crear Superusuario](#4-aplicar-migraciones-y-crear-superusuario)
-  - [5. Acceder a la Aplicación](#5-acceder-a-la-aplicación)
-- [Configuración en Ambiente de Producción](#configuración-en-ambiente-de-producción)
-  - [1. Configurar Servidor](#1-configurar-servidor)
-  - [2. Configurar Variables de Entorno para Producción](#2-configurar-variables-de-entorno-para-producción)
-  - [3. Construir y Levantar los Contenedores en Modo Producción](#3-construir-y-levantar-los-contenedores-en-modo-producción)
-  - [4. Configurar Servidor Web (Opcional)](#4-configurar-servidor-web-opcional)
-- [Variables de Entorno](#variables-de-entorno)
-- [Comandos Útiles](#comandos-útiles)
-- [Notas Adicionales](#notas-adicionales)
+- [Introducción](#introducción)
+- [Características](#características)
+- [Tecnologías Utilizadas](#tecnologías-utilizadas)
+- [Prerequisitos](#prerequisitos)
+- [Instalación](#instalación)
+- [Configuración de Variables de Entorno](#configuración-de-variables-de-entorno)
+- [Despliegue en Render.com](#despliegue-en-rendercom)
+- [Gestión de Archivos Estáticos](#gestión-de-archivos-estáticos)
+- [Creación de un Superusuario](#creación-de-un-superusuario)
+- [Migraciones de la Base de Datos](#migraciones-de-la-base-de-datos)
+- [Uso](#uso)
+- [Solución de Problemas](#solución-de-problemas)
+- [Buenas Prácticas y Consideraciones Adicionales](#buenas-prácticas-y-consideraciones-adicionales)
+- [Recursos Adicionales](#recursos-adicionales)
 
 ---
 
-## Requisitos Previos
+## Introducción
 
-- **Docker** y **Docker Compose** instalados en el sistema.
-- **Git** para clonar el repositorio.
-- Opcional: Conocimientos básicos de Python y Django.
+**Booking System** es una aplicación web desarrollada con Django que permite gestionar reservas de productos de manera eficiente. La aplicación está diseñada para ser desplegada en Render.com utilizando Docker, asegurando una fácil escalabilidad y mantenimiento.
 
 ---
 
-## Configuración en Ambiente Local
+## Características
 
-### 1. Clonar el Repositorio
-
-Clona el repositorio del proyecto a tu máquina local:
-
-```bash
-git clone https://github.com/tu_usuario/aremko_booking_system.git
-cd aremko_booking_system
-```
-
-### 2. Configurar Variables de Entorno
-
-Crea un archivo `.env` en el directorio raíz del proyecto:
-
-```bash
-touch .env
-```
-
-Agrega las siguientes variables al archivo `.env`:
-
-```env
-# Variables de Django
-SECRET_KEY=tu_clave_secreta
-DEBUG=True
-
-# Configuración de PostgreSQL
-POSTGRES_DB=aremko_db
-POSTGRES_USER=aremko_user
-POSTGRES_PASSWORD=aremko_password
-DB_HOST=db
-DB_PORT=5432
-
-# API Key de OpenAI (si aplica)
-OPENAI_API_KEY=tu_api_key_de_openai
-
-# Otros
-ALLOWED_HOSTS=*
-```
-
-### 3. Construir y Levantar los Contenedores
-
-Ejecuta el siguiente comando para construir las imágenes y levantar los contenedores:
-
-```bash
-docker compose up --build
-```
-
-### 4. Aplicar Migraciones y Crear Superusuario
-
-En otra terminal, aplica las migraciones:
-
-```bash
-docker compose exec web python manage.py migrate
-```
-
-Crea un superusuario para acceder al panel de administración:
-
-```bash
-docker compose exec web python manage.py createsuperuser
-```
-
-Sigue las instrucciones para establecer el nombre de usuario y la contraseña.
-
-### 5. Acceder a la Aplicación
-
-- **Aplicación Web:** Visita `http://localhost:8000/` en tu navegador.
-- **Panel de Administración:** Visita `http://localhost:8000/admin/` e inicia sesión con el superusuario.
+- **Gestión de Productos:** Añadir, editar y eliminar productos disponibles para reserva.
+- **Precios Dinámicos:** Configurar reglas de precios que se ajustan automáticamente según criterios específicos.
+- **Panel de Administración:** Interfaz intuitiva para gestionar todas las funcionalidades de la aplicación.
+- **Manejo de Archivos Estáticos:** Utiliza WhiteNoise para servir archivos estáticos de manera eficiente.
+- **Automatización de Superusuario:** Crea un superusuario automáticamente durante el despliegue utilizando variables de entorno.
 
 ---
 
-## Configuración en Ambiente de Producción
+## Tecnologías Utilizadas
 
-### 1. Configurar Servidor
-
-- **Sistema Operativo:** Se recomienda un servidor con Linux (Ubuntu, Debian, etc.).
-- **Instalar Docker y Docker Compose:**
-
-```bash
-sudo apt update
-sudo apt install docker.io docker-compose
-```
-
-### 2. Configurar Variables de Entorno para Producción
-
-En el servidor, crea un archivo `.env` con las variables adecuadas:
-
-```env
-# Variables de Django
-SECRET_KEY=una_clave_secreta_segura
-DEBUG=False
-
-# Configuración de PostgreSQL
-POSTGRES_DB=aremko_db
-POSTGRES_USER=aremko_user
-POSTGRES_PASSWORD=aremko_password_segura
-DB_HOST=db
-DB_PORT=5432
-
-# API Key de OpenAI (si aplica)
-OPENAI_API_KEY=tu_api_key_de_openai
-
-# Otros
-ALLOWED_HOSTS=tu_dominio.com
-```
-
-### 3. Construir y Levantar los Contenedores en Modo Producción
-
-En producción, es recomendable utilizar un servidor de aplicaciones como **Gunicorn** y un servidor web como **Nginx**.
-
-#### Actualizar `Dockerfile` para Producción
-
-Modifica el `Dockerfile` para utilizar Gunicorn:
-
-```dockerfile
-# Usar una imagen base ligera
-FROM python:3.9-slim
-
-WORKDIR /app
-
-# Instalar dependencias del sistema
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
-
-# Copiar requerimientos e instalar dependencias
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copiar el código de la aplicación
-COPY . .
-
-# Exponer el puerto de Gunicorn
-EXPOSE 8000
-
-# Comando de inicio
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "aremko_project.wsgi:application"]
-```
-
-#### Levantar los Contenedores
-
-```bash
-docker compose up --build -d
-```
-
-### 4. Configurar Servidor Web (Opcional)
-
-Para servir la aplicación en el puerto 80 o 443, puedes utilizar **Nginx** como proxy inverso.
-
-#### Instalar Nginx
-
-```bash
-sudo apt install nginx
-```
-
-#### Configurar Nginx
-
-Crea un archivo de configuración para tu sitio en `/etc/nginx/sites-available/aremko`:
-
-```nginx
-server {
-    listen 80;
-    server_name tu_dominio.com;
-
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
-Habilita el sitio y reinicia Nginx:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/aremko /etc/nginx/sites-enabled/
-sudo systemctl restart nginx
-```
+- **Backend:** Django 4.2
+- **Base de Datos:** PostgreSQL
+- **Servidor de Aplicaciones:** Gunicorn
+- **Manejo de Archivos Estáticos:** WhiteNoise
+- **Contenerización:** Docker
+- **Plataforma de Despliegue:** Render.com
 
 ---
 
-## Variables de Entorno
+## Prerequisitos
 
-- **SECRET_KEY:** Clave secreta de Django. Debe ser segura y no compartirse.
-- **DEBUG:** Establecer en `False` en producción.
-- **POSTGRES_DB**, **POSTGRES_USER**, **POSTGRES_PASSWORD:** Credenciales de la base de datos.
-- **DB_HOST**, **DB_PORT:** Configuración de conexión a la base de datos.
-- **OPENAI_API_KEY:** Clave de API para OpenAI, si es utilizada.
-- **ALLOWED_HOSTS:** Lista de dominios o direcciones IP permitidas.
+Antes de comenzar, asegúrate de tener instalados los siguientes componentes en tu sistema:
+
+- [Python 3.9](https://www.python.org/downloads/)
+- [Docker](https://www.docker.com/get-started)
+- [Git](https://git-scm.com/downloads)
+- [GitHub Account](https://github.com/)
 
 ---
 
-## Comandos Útiles
+## Instalación
 
-- **Aplicar migraciones:**
+Sigue estos pasos para configurar el proyecto localmente:
 
-  ```bash
-  docker compose exec web python manage.py migrate
+1. **Clonar el Repositorio:**
+
+   ```bash
+   git clone https://github.com/nomad3/booking_system.git
+   cd booking_system
+   ```
+
+2. **Crear y Activar un Entorno Virtual:**
+
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # En Windows usa: venv\Scripts\activate
+   ```
+
+3. **Actualizar `pip` e Instalar Dependencias:**
+
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+
+4. **Configurar la Base de Datos Localmente (Opcional):**
+
+   Asegúrate de tener PostgreSQL instalado y crea una base de datos para desarrollo.
+
+   ```bash
+   psql
+   CREATE DATABASE booking_system_dev;
+   \q
+   ```
+
+5. **Configurar Variables de Entorno:**
+
+   Crea un archivo `.env` en la raíz del proyecto y añade las siguientes variables:
+
+   ```env
+   DEBUG=True
+   SECRET_KEY=tu_clave_secreta
+   DATABASE_URL=postgres://usuario:contraseña@localhost:5432/booking_system_dev
+   DJANGO_SUPERUSER_USERNAME=admin
+   DJANGO_SUPERUSER_EMAIL=admin@example.com
+   DJANGO_SUPERUSER_PASSWORD=tu_contraseña_segura
+   ALLOWED_HOSTS=localhost,127.0.0.1
+   ```
+
+   *Reemplaza los valores con tus configuraciones específicas.*
+
+6. **Aplicar Migraciones y Crear Superusuario:**
+
+   ```bash
+   python manage.py makemigrations ventas
+   python manage.py migrate
+   python manage.py createsuperuser
+   ```
+
+7. **Recolectar Archivos Estáticos:**
+
+   ```bash
+   python manage.py collectstatic
+   ```
+
+8. **Iniciar el Servidor de Desarrollo:**
+
+   ```bash
+   python manage.py runserver
+   ```
+
+   Accede a `http://localhost:8000/admin/` para iniciar sesión en el panel de administración.
+
+---
+
+## Configuración de Variables de Entorno
+
+Es crucial manejar de manera segura las variables de entorno, especialmente las que contienen información sensible. Asegúrate de configurar las siguientes variables en Render.com:
+
+- `DEBUG`: `False` en producción.
+- `SECRET_KEY`: Una clave secreta segura.
+- `DATABASE_URL`: URL de conexión a tu base de datos PostgreSQL en Render.com.
+- `DJANGO_SUPERUSER_USERNAME`: Nombre de usuario para el superusuario.
+- `DJANGO_SUPERUSER_EMAIL`: Correo electrónico para el superusuario.
+- `DJANGO_SUPERUSER_PASSWORD`: Contraseña para el superusuario.
+- `ALLOWED_HOSTS`: Dominios permitidos (e.g., `booking-system-ykvv.onrender.com`).
+
+---
+
+## Despliegue en Render.com
+
+Sigue estos pasos para desplegar la aplicación en Render.com:
+
+1. **Crear un Nuevo Servicio Web en Render.com:**
+
+   - Ve a tu [Dashboard de Render.com](https://render.com/) e inicia sesión.
+   - Haz clic en **New** > **Web Service**.
+   - Selecciona tu repositorio de GitHub (`nomad3/booking_system`).
+
+2. **Configurar el Servicio Web:**
+
+   - **Name:** `booking-system`
+   - **Environment:** Docker
+   - **Build Command:** (Dejar vacío si usas Docker)
+   - **Start Command:** (Definido en `entrypoint.sh`)
+   - **Region:** Selecciona la región más cercana a tus usuarios.
+   - **Instance Type:** Selecciona según tus necesidades (el plan gratuito es suficiente para comenzar).
+
+3. **Configurar Variables de Entorno:**
+
+   Añade todas las variables de entorno necesarias como se describió anteriormente.
+
+4. **Configurar el `Dockerfile`:**
+
+   Asegúrate de que tu `Dockerfile` está correctamente configurado para copiar y ejecutar `entrypoint.sh`.
+
+5. **Desplegar la Aplicación:**
+
+   Render.com detectará automáticamente el `Dockerfile` y comenzará el proceso de construcción y despliegue. Monitorea los logs para asegurarte de que todo se construye y despliega correctamente.
+
+---
+
+## Gestión de Archivos Estáticos
+
+La aplicación utiliza **WhiteNoise** para servir archivos estáticos de manera eficiente. Asegúrate de que **WhiteNoise** está correctamente configurado:
+
+1. **Instalación de WhiteNoise:**
+
+   Asegúrate de que `whitenoise` está listado en `requirements.txt`:
+
+   ```bash
+   whitenoise==6.4.0
+   ```
+
+2. **Configuración en `settings.py`:**
+
+   ```python
+   MIDDLEWARE = [
+       'django.middleware.security.SecurityMiddleware',
+       'whitenoise.middleware.WhiteNoiseMiddleware',
+       # ... otros middleware ...
+   ]
+
+   STATIC_URL = '/static/'
+   STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+   STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+   ```
+
+3. **Recolectar Archivos Estáticos:**
+
+   El script `entrypoint.sh` ya incluye el comando para recolectar archivos estáticos:
+
+   ```bash
+   python manage.py collectstatic --noinput
+   ```
+
+---
+
+## Creación de un Superusuario
+
+Dado que el plan gratuito de Render.com no permite acceso a la consola de shell, la creación del superusuario se automatiza mediante el script `entrypoint.sh`.
+
+### **a. Configurar Variables de Entorno para el Superusuario**
+
+En Render.com, añade las siguientes variables de entorno:
+
+- `DJANGO_SUPERUSER_USERNAME`: Nombre de usuario del superusuario.
+- `DJANGO_SUPERUSER_EMAIL`: Correo electrónico del superusuario.
+- `DJANGO_SUPERUSER_PASSWORD`: Contraseña del superusuario.
+
+### **b. Modificar `entrypoint.sh` para Crear el Superusuario**
+
+Asegúrate de que tu `entrypoint.sh` incluye el siguiente bloque para crear el superusuario automáticamente:
+
+```bash
+# Crear superusuario si no existe
+echo "Creando superusuario si no existe..."
+python manage.py shell <<EOF
+from django.contrib.auth import get_user_model
+User = get_user_model()
+import os
+
+username = os.getenv('DJANGO_SUPERUSER_USERNAME')
+email = os.getenv('DJANGO_SUPERUSER_EMAIL')
+password = os.getenv('DJANGO_SUPERUSER_PASSWORD')
+
+if username and email and password:
+    if not User.objects.filter(username=username).exists():
+        User.objects.create_superuser(username=username, email=email, password=password)
+        print("Superusuario creado.")
+    else:
+        print("Superusuario ya existe.")
+else:
+    print("Variables de entorno para superusuario no están completamente configuradas.")
+EOF
+```
+
+*Recuerda manejar las credenciales de manera segura y eliminar este bloque una vez creado el superusuario para evitar riesgos de seguridad.*
+
+### **c. Despliegue y Verificación**
+
+1. **Commit y Push de los Cambios:**
+
+   ```bash
+   git add entrypoint.sh
+   git commit -m "Automatizar creación de superusuario"
+   git push origin main
+   ```
+
+2. **Monitorear el Despliegue:**
+
+   Render.com ejecutará el script `entrypoint.sh` durante el despliegue. Verifica los logs para confirmar que el superusuario se ha creado correctamente.
+
+3. **Acceder al Panel de Administración:**
+
+   Ve a `https://booking-system-ykvv.onrender.com/admin/` e inicia sesión con las credenciales del superusuario.
+
+4. **Eliminar o Comentar el Bloque de Creación Automática (Recomendado):**
+
+   Para mejorar la seguridad, una vez creado el superusuario, comenta o elimina el bloque que lo crea automáticamente en `entrypoint.sh` y realiza un nuevo despliegue.
+
+---
+
+## Migraciones de la Base de Datos
+
+Es esencial mantener las migraciones sincronizadas con los modelos de Django para evitar errores como columnas faltantes.
+
+### **a. Crear Migraciones Localmente**
+
+1. **Crear Migraciones:**
+
+   ```bash
+   python manage.py makemigrations ventas
+   ```
+
+2. **Aplicar Migraciones Localmente:**
+
+   ```bash
+   python manage.py migrate
+   ```
+
+### **b. Commit y Push de Migraciones a GitHub**
+
+1. **Añadir Migraciones:**
+
+   ```bash
+   git add ventas/migrations/
+   ```
+
+2. **Cometer Migraciones:**
+
+   ```bash
+   git commit -m "Agregar migraciones para el campo 'nombre_regla' en PrecioDinamico"
+   ```
+
+3. **Push a la Rama Principal:**
+
+   ```bash
+   git push origin main
+   ```
+
+Render.com aplicará automáticamente las migraciones durante el despliegue.
+
+---
+
+## Uso
+
+Una vez desplegada la aplicación, puedes acceder a las siguientes URLs:
+
+- **Panel de Administración:**
+  ```
+  https://booking-system-ykvv.onrender.com/admin/
   ```
 
-- **Crear superusuario:**
-
-  ```bash
-  docker compose exec web python manage.py createsuperuser
+- **Página de Inicio:**
+  ```
+  https://booking-system-ykvv.onrender.com/
   ```
 
-- **Ver logs de los contenedores:**
-
-  ```bash
-  docker compose logs -f
-  ```
-
-- **Detener contenedores:**
-
-  ```bash
-  docker compose down
-  ```
+*Reemplaza `booking-system-ykvv.onrender.com` con tu dominio personalizado si lo tienes.*
 
 ---
 
-## Notas Adicionales
+## Buenas Prácticas y Consideraciones Adicionales
 
-- **Seguridad:**
-  - Asegúrate de **no subir** el archivo `.env` al repositorio.
-  - En producción, utiliza **HTTPS** configurando certificados SSL con **Let's Encrypt**.
+### **Seguridad**
+- **Mantén `DEBUG = False` en Producción:**
+  - Evita exponer información sensible.
+  
+- **Configura Correctamente `ALLOWED_HOSTS`:**
+  - Especifica solo los dominios necesarios.
 
-- **Persistencia de Datos:**
-  - Los datos de la base de datos se almacenan en un volumen Docker llamado `postgres_data`.
-  - Asegúrate de realizar backups periódicos de la base de datos.
+- **Gestión Segura de `SECRET_KEY`:**
+  - Usa variables de entorno para manejarla de manera segura.
 
-- **Actualizaciones:**
-  - Cuando realices cambios en el código o dependencias, reconstruye las imágenes y reinicia los contenedores:
+### **Manejo de Archivos Estáticos y Media**
+- **Usar WhiteNoise para Archivos Estáticos:**
+  - Simplifica el manejo y mejora el rendimiento.
 
-    ```bash
-    docker compose build
-    docker compose up -d
-    ```
+- **Servir Archivos Media Externamente:**
+  - Considera servicios como AWS S3 para manejar subidas de usuarios.
+
+### **Monitorización y Logs**
+- **Integrar Herramientas de Monitorización:**
+  - Servicios como **Sentry** pueden ayudar a monitorear errores en tiempo real.
+
+- **Revisar Regularmente los Logs:**
+  - Detecta y soluciona problemas rápidamente.
+
+### **Backup de la Base de Datos**
+- **Automatizar Backups:**
+  - Asegura que tu base de datos en Render.com tenga backups automáticos para evitar pérdida de datos.
+
+### **CI/CD y Automatización**
+- **GitHub Actions:**
+  - Configura pipelines más complejos para automatizar pruebas y builds si es necesario.
+
+---
+
+## Recursos Adicionales
+
+- **Documentación de Render.com:**
+  - [Deploying a Django Application](https://render.com/docs/deploy-django)
+  - [Troubleshooting Deploys](https://render.com/docs/troubleshooting-deploys)
+
+- **Documentación de Django:**
+  - [URL Dispatcher](https://docs.djangoproject.com/en/4.2/topics/http/urls/)
+  - [Settings](https://docs.djangoproject.com/en/4.2/ref/settings/)
+
+- **Gunicorn:**
+  - [Gunicorn Documentation](https://docs.gunicorn.org/en/stable/)
+
+- **WhiteNoise:**
+  - [WhiteNoise Documentation](http://whitenoise.evans.io/en/stable/)
+
+- **Sentry (Opcional para Monitorización):**
+  - [Sentry Documentation](https://docs.sentry.io/platforms/python/django/)
+
+---
