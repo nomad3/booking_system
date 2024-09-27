@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Proveedor, CategoriaProducto, Producto, PrecioDinamico, Reserva, Venta
+from .models import Proveedor, CategoriaProducto, Producto, PrecioDinamico, Reserva, Venta, Pago
 
 @admin.register(Proveedor)
 class ProveedorAdmin(admin.ModelAdmin):
@@ -19,8 +19,8 @@ class ProductoAdmin(admin.ModelAdmin):
 
 @admin.register(PrecioDinamico)
 class PrecioDinamicoAdmin(admin.ModelAdmin):
-    list_display = ('producto', 'precio', 'fecha_inicio', 'fecha_fin')
-    list_filter = ('producto',)
+    list_display = ('producto', 'precio', 'fecha_inicio', 'fecha_fin', 'prioridad', 'dia_semana', 'mes')
+    list_filter = ('producto', 'prioridad', 'dia_semana', 'mes')
 
 @admin.register(Reserva)
 class ReservaAdmin(admin.ModelAdmin):
@@ -29,10 +29,16 @@ class ReservaAdmin(admin.ModelAdmin):
 
 @admin.register(Venta)
 class VentaAdmin(admin.ModelAdmin):
-    list_display = ('producto', 'cliente', 'fecha_venta', 'cantidad', 'precio_total')
+    list_display = ('producto', 'cliente', 'fecha_venta', 'cantidad', 'get_total')
     list_filter = ('producto', 'fecha_venta')
-    def precio_total(self, obj):
-        return obj.precio_total
 
-    precio_total.short_description = 'Precio Total'
-    # precio_total.admin_order_field = 'precio_total'  # Uncomment if sortable
+    def get_total(self, obj):
+        return obj.total
+
+    get_total.short_description = 'Total'
+    get_total.admin_order_field = 'total'
+
+@admin.register(Pago)
+class PagoAdmin(admin.ModelAdmin):
+    list_display = ('venta', 'fecha_pago', 'monto', 'metodo_pago')
+    list_filter = ('metodo_pago', 'fecha_pago')

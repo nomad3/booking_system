@@ -1,14 +1,15 @@
 import os
 from pathlib import Path
+import dj_database_url
 
 # Ruta base del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Secret key y debug obtenidos de variables de entorno
-SECRET_KEY = os.environ.get('SECRET_KEY', 'tu_secreto_de_django')
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('DEBUG') == 'True'
 
-ALLOWED_HOSTS = ['*']  # Actualiza esto en producción
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(',')
 
 # Aplicaciones instaladas
 INSTALLED_APPS = [
@@ -20,7 +21,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'ventas',
     'rest_framework',
 ]
@@ -63,14 +63,7 @@ WSGI_APPLICATION = 'aremko_project.wsgi.application'
 
 # Configuración de la base de datos
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'aremko_db'),
-        'USER': os.environ.get('POSTGRES_USER', 'aremko_db_user'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', '0tqNOT3N2gWQKjX5dLNsw1Pn6TDDP71x'),
-        'HOST': os.environ.get('DB_HOST', 'dpg-crqumfd6l47c73caget0-a.oregon-postgres.render.com'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-    }
+    'default': dj_database_url.config(default=os.getenv('DATABASE_URL'))
 }
 
 # Configuraciones adicionales...
