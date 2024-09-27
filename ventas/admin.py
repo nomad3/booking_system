@@ -12,6 +12,7 @@ from .models import (
     PrecioDinamico,
     Pago
 )
+from .forms import ProductoForm
 
 # Definir Inlines primero
 class MovimientoClienteInline(admin.TabularInline):
@@ -65,9 +66,10 @@ class MovimientoClienteAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         return qs.select_related('cliente')
 
-# Registrar el modelo Producto
+# Registrar el modelo Producto con el formulario personalizado
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
+    form = ProductoForm
     list_display = ('nombre', 'categoria', 'precio_base', 'cantidad_disponible', 'es_reservable', 'proveedor')
     list_filter = ('categoria', 'es_reservable')
     search_fields = ('nombre', 'categoria__nombre')

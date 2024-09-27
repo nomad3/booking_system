@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.db.models import Q
 from django.core.exceptions import ValidationError
 from django.core.cache import cache
+from datetime import timedelta
 
 class Cliente(models.Model):
     nombre = models.CharField(max_length=255)
@@ -59,7 +60,27 @@ class Producto(models.Model):
     categoria = models.ForeignKey(CategoriaProducto, on_delete=models.CASCADE)
     cantidad_disponible = models.PositiveIntegerField(default=0)
     es_reservable = models.BooleanField(default=False)
-    duracion_reserva = models.DurationField(null=True, blank=True)
+    
+    # Campos para duración de reserva
+    duracion_reserva_valor = models.PositiveIntegerField(
+        null=True, 
+        blank=True,
+        help_text='Cantidad de tiempo para la reserva.'
+    )
+    DURACION_UNIDAD_CHOICES = [
+        ('minuto', 'Minuto'),
+        ('hora', 'Hora'),
+        ('dia', 'Día'),
+    ]
+    duracion_reserva_unidad = models.CharField(
+        max_length=10,
+        choices=DURACION_UNIDAD_CHOICES,
+        null=True,
+        blank=True,
+        help_text='Unidad de tiempo para la reserva.'
+    )
+    duracion_reserva = models.DurationField(null=True, blank=True, editable=False)
+
     proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
@@ -98,6 +119,30 @@ class Producto(models.Model):
             cache.set(cache_key, precio, timeout=60*60)  # Cachear por 1 hora
 
         return precio
+
+    def clean(self):
+        super().clean()
+        if self.es_reservable:
+            if not self.duracion_reserva_valor or not self.duracion_reserva_unidad:
+                raise ValidationError('Debe especificar tanto el valor como la unidad de duración de la reserva si el producto es reservable.')
+        else:
+            self.duracion_reserva_valor = None
+            self.duracion_reserva_unidad = None
+            self.duracion_reserva = None
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        if self.es_reservable and self.duracion_reserva_valor and self.duracion_reserva_unidad:
+            if self.duracion_reserva_unidad == 'minuto':
+                self.duracion_reserva = timedelta(minutes=self.duracion_reserva_valor)
+            elif self.duracion_reserva_unidad == 'hora':
+                self.duracion_reserva = timedelta(hours=self.duracion_reserva_valor)
+            elif self.duracion_reserva_unidad == 'dia':
+                self.duracion_reserva = timedelta(days=self.duracion_reserva_valor)
+        else:
+            self.duracion_reserva = None
+
+        super(Producto, self).save(*args, **kwargs)
 
     class Meta:
         indexes = [
@@ -148,6 +193,7 @@ class Reserva(models.Model):
         return f"Reserva de {self.producto.nombre} por {self.cliente.nombre} desde {self.fecha_inicio} hasta {self.fecha_fin}"
 
     def clean(self):
+        super().clean()
         # Validar que fecha_fin es posterior a fecha_inicio
         if self.fecha_fin <= self.fecha_inicio:
             raise ValidationError('La fecha de fin debe ser posterior a la fecha de inicio.')
@@ -227,6 +273,7 @@ class Venta(models.Model):
         return f"Venta {self.id} - Cliente: {self.cliente.nombre}"
 
     def clean(self):
+        super().clean()
         if self.pagado < 0:
             raise ValidationError('El monto pagado no puede ser negativo.')
         if self.pagado > self.total:
@@ -280,6 +327,7 @@ class Pago(models.Model):
         return f'Pago de {self.monto} para Venta #{self.venta.id}'
 
     def clean(self):
+        super().clean()
         if self.monto <= 0:
             raise ValidationError('El monto del pago debe ser positivo.')
         if self.venta.pagado + self.monto > self.venta.total:
@@ -293,7 +341,7 @@ class Pago(models.Model):
             if self.venta.pagado > self.venta.total:
                 raise ValidationError('El monto pagado excede el total de la venta.')
             self.venta.save()
-
+    
     class Meta:
         indexes = [
             models.Index(fields=['venta', 'fecha_pago']),
