@@ -52,6 +52,7 @@ echo "Base de datos está disponible."
 # Aplicar migraciones de Django
 echo "Aplicando migraciones..."
 python manage.py migrate
+python manage.py makemigrations ventas
 
 # Crear superusuario si no existe
 echo "Creando superusuario si no existe..."
