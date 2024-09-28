@@ -27,7 +27,7 @@ class ReservaProductoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class VentaReservaSerializer(serializers.ModelSerializer):
-    reservaprodutos = ReservaProductoSerializer(many=True)
+    reserva_productos = ReservaProductoSerializer(many=True, read_only=True)
 
     class Meta:
         model = VentaReserva

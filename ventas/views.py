@@ -18,7 +18,7 @@ class ProductoViewSet(viewsets.ModelViewSet):
     queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
 
-class VentaReservaViewSet(viewsets.ModelViewSet):  # Asegúrate de que esto coincida con el nombre en urls.py
+class VentaReservaViewSet(viewsets.ModelViewSet):
     queryset = VentaReserva.objects.all()
     serializer_class = VentaReservaSerializer
 

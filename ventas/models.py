@@ -55,15 +55,38 @@ class Producto(models.Model):
     def obtener_precio_actual(self, fecha_reserva=None):
         if not fecha_reserva:
             fecha_reserva = timezone.now()
-        # Lógica para precios dinámicos basada en fecha y hora
-        return self.precio_base  # Puedes agregar aquí la lógica de precios dinámicos
+        else:
+            # Asegurarse de que fecha_reserva es un objeto datetime
+            if isinstance(fecha_reserva, str):
+                fecha_reserva = timezone.datetime.fromisoformat(fecha_reserva)
 
+        # Convertir fecha_reserva a zona horaria activa
+        fecha_reserva = timezone.make_aware(fecha_reserva, timezone.get_current_timezone())
+
+        # Filtrar reglas que aplican al producto
+        reglas = PrecioDinamico.objects.filter(producto=self)
+
+        # Filtrar reglas que aplican en base a la fecha y hora
+        reglas = reglas.filter(
+            Q(fecha_inicio__isnull=True) | Q(fecha_inicio__lte=fecha_reserva.date()),
+            Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=fecha_reserva.date()),
+            Q(hora_inicio__isnull=True) | Q(hora_inicio__lte=fecha_reserva.time()),
+            Q(hora_fin__isnull=True) | Q(hora_fin__gte=fecha_reserva.time()),
+            Q(dia_semana__isnull=True) | Q(dia_semana=fecha_reserva.isoweekday()),
+            Q(mes__isnull=True) | Q(mes=fecha_reserva.month)
+        ).order_by('-prioridad')  # Aquí estaba el error corregido
+
+        if reglas.exists():
+            # Tomar la regla con mayor prioridad
+            return reglas.first().precio
+        return self.precio_base
+    
 # Modelo VentaReserva (Unificación de Venta y Reserva)
 class VentaReserva(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     productos = models.ManyToManyField(Producto, through='ReservaProducto')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    fecha_reserva = models.DateTimeField(null=True, blank=True)  # Fecha de la reserva para productos reservables
+    fecha_reserva = models.DateTimeField(null=True, blank=True)  # Fecha de la reserva general
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     saldo_pendiente = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -82,10 +105,8 @@ class VentaReserva(models.Model):
         return f"Venta/Reserva #{self.id} de {self.cliente}"
 
     def calcular_total(self):
-        total = 0
-        for reserva_producto in self.reservaprodutos.all():
-            precio = reserva_producto.producto.obtener_precio_actual(self.fecha_reserva)
-            total += precio * reserva_producto.cantidad
+        """Calcula el total de la reserva sumando el precio total de todos los productos reservados."""
+        total = sum(reserva_producto.obtener_precio_total() for reserva_producto in self.reserva_productos.all())
         self.total = total
         self.save()
 
@@ -101,10 +122,9 @@ class VentaReserva(models.Model):
         else:
             self.estado = 'pendiente'
         self.save(update_fields=['pagado', 'saldo_pendiente', 'estado'])
-
 # Modelo ReservaProducto (para manejar productos reservables)
 class ReservaProducto(models.Model):
-    venta_reserva = models.ForeignKey('VentaReserva', on_delete=models.CASCADE, related_name='reservaprodutos')
+    venta_reserva = models.ForeignKey('VentaReserva', on_delete=models.CASCADE, related_name='reserva_productos')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField()
     fecha_agendamiento = models.DateTimeField(null=True, blank=True)  # Fecha para agendar productos reservables
@@ -112,6 +132,10 @@ class ReservaProducto(models.Model):
     def __str__(self):
         return f"{self.cantidad} x {self.producto.nombre} en Venta/Reserva #{self.venta_reserva.id}"
 
+    def obtener_precio_total(self):
+        """Calcula el precio total de este producto en la reserva considerando la cantidad."""
+        precio = self.producto.obtener_precio_actual(self.fecha_agendamiento)
+        return precio * self.cantidad
 # Modelo Pago
 class Pago(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
