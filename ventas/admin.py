@@ -11,6 +11,7 @@ class PagoInline(admin.TabularInline):
     model = Pago
     extra = 1
 
+# Test Auto Deploy
 # Administración de VentaReserva
 @admin.register(VentaReserva)
 class VentaReservaAdmin(admin.ModelAdmin):
