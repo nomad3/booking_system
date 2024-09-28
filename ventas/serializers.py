@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente
+from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Pago, Cliente, ReservaProducto
 
 class ProveedorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,16 +17,11 @@ class ProductoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class VentaReservaSerializer(serializers.ModelSerializer):
-    productos = serializers.StringRelatedField(many=True)
-    pagos = serializers.StringRelatedField(many=True)
+    productos = ProductoSerializer(many=True, read_only=True)
+    pagos = serializers.StringRelatedField(many=True)  # Assuming you want to list payments
 
     class Meta:
         model = VentaReserva
-        fields = '__all__'
-
-class ReservaProductoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ReservaProducto
         fields = '__all__'
 
 class PagoSerializer(serializers.ModelSerializer):
@@ -37,4 +32,9 @@ class PagoSerializer(serializers.ModelSerializer):
 class ClienteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cliente
+        fields = '__all__'
+
+class ReservaProductoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReservaProducto
         fields = '__all__'
