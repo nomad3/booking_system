@@ -1,10 +1,6 @@
 from rest_framework import viewsets
-from .models import Cliente, Proveedor, CategoriaProducto, Producto, VentaReserva, Pago
-from .serializers import ClienteSerializer, ProveedorSerializer, CategoriaProductoSerializer, ProductoSerializer, VentaReservaSerializer, PagoSerializer
-
-class ClienteViewSet(viewsets.ModelViewSet):
-    queryset = Cliente.objects.all()
-    serializer_class = ClienteSerializer
+from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente
+from .serializers import ProveedorSerializer, CategoriaProductoSerializer, ProductoSerializer, VentaReservaSerializer, ReservaProductoSerializer, PagoSerializer, ClienteSerializer
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()
@@ -22,6 +18,14 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
     queryset = VentaReserva.objects.all()
     serializer_class = VentaReservaSerializer
 
+class ReservaProductoViewSet(viewsets.ModelViewSet):
+    queryset = ReservaProducto.objects.all()
+    serializer_class = ReservaProductoSerializer
+
 class PagoViewSet(viewsets.ModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
+
+class ClienteViewSet(viewsets.ModelViewSet):
+    queryset = Cliente.objects.all()
+    serializer_class = ClienteSerializer
