@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente
+from .models import VentaReserva, ReservaProducto, Pago, Cliente, Producto, Proveedor, CategoriaProducto
 
 # Inline para agregar productos en la misma vista de la reserva
 class ReservaProductoInline(admin.TabularInline):
@@ -21,30 +21,34 @@ class VentaReservaAdmin(admin.ModelAdmin):
     readonly_fields = ('total', 'pagado', 'saldo_pendiente')
 
     def save_model(self, request, obj, form, change):
+        # Guarda la instancia de VentaReserva primero
+        if not change:
+            obj.save()
+
+        # Ahora que la instancia tiene un primary key, calcular el total y actualizar pagos
         obj.calcular_total()
         obj.actualizar_pago()
+
         super().save_model(request, obj, form, change)
 
-@admin.register(Proveedor)
-class ProveedorAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'contacto', 'telefono', 'email', 'es_externo')
+# Registro de los demás modelos
+@admin.register(Producto)
+class ProductoAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'precio_base', 'cantidad_disponible', 'es_reservable', 'categoria')
+    search_fields = ['nombre']
+    list_filter = ['categoria']
 
 @admin.register(CategoriaProducto)
 class CategoriaProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre',)
+    search_fields = ['nombre']
 
-@admin.register(Producto)
-class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'descripcion', 'precio_base', 'categoria', 'cantidad_disponible', 'es_reservable')
-
-@admin.register(ReservaProducto)
-class ReservaProductoAdmin(admin.ModelAdmin):
-    list_display = ('venta_reserva', 'producto', 'cantidad', 'fecha_agendamiento')
-
-@admin.register(Pago)
-class PagoAdmin(admin.ModelAdmin):
-    list_display = ('venta_reserva', 'monto', 'fecha_pago', 'metodo_pago')
+@admin.register(Proveedor)
+class ProveedorAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'contacto', 'telefono', 'email', 'es_externo')
+    search_fields = ['nombre', 'contacto']
 
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'email', 'telefono')
+    search_fields = ['nombre', 'email']
