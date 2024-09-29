@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente
 from django import forms
+from django.core.exceptions import ValidationError
 
 
 class ReservaProductoForm(forms.ModelForm):
@@ -10,11 +11,16 @@ class ReservaProductoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance and not self.instance.producto.es_reservable:
-            # Hide 'fecha_agendamiento' for non-reservable products
-            self.fields['fecha_agendamiento'].widget = forms.HiddenInput()
+        # Ensure instance.producto exists before trying to access its fields
+        if self.instance and self.instance.pk and self.instance.producto:
+            if not self.instance.producto.es_reservable:
+                # Hide 'fecha_agendamiento' for non-reservable products
+                self.fields['fecha_agendamiento'].widget = forms.HiddenInput()
+            else:
+                self.fields['fecha_agendamiento'].required = True
         else:
-            self.fields['fecha_agendamiento'].required = True
+            # If instance doesn't exist yet, don't show the fecha_agendamiento field
+            self.fields['fecha_agendamiento'].widget = forms.HiddenInput()
 
 
 class ReservaProductoInline(admin.TabularInline):
