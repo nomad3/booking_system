@@ -11,15 +11,18 @@ class ReservaProductoInline(admin.TabularInline):
         # Dynamically modify the form fields for each instance
         for form in formset.form.base_fields:
             # Check if producto is present and is reservable
-            if 'producto' in formset.form.base_fields and formset.form.base_fields['producto'].widget:
-                formset.form.base_fields['fecha_agendamiento'].required = False
+            formset.form.base_fields['fecha_agendamiento'].required = False
         return formset
 
     def get_fields(self, request, obj=None):
         fields = super().get_fields(request, obj)
-        # Show 'fecha_agendamiento' only if the product is reservable
-        if obj and not obj.producto.es_reservable:
-            fields = [f for f in fields if f != 'fecha_agendamiento']
+        # Don't show 'fecha_agendamiento' for non-reservable products
+        # Here we check within 'ReservaProducto' objects linked to this 'VentaReserva'
+        if obj:
+            reservaprodutos = obj.reservaprodutos.all()
+            for reservaproduto in reservaprodutos:
+                if not reservaproduto.producto.es_reservable:
+                    fields = [f for f in fields if f != 'fecha_agendamiento']
         return fields
 
 class PagoInline(admin.TabularInline):
