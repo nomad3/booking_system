@@ -6,24 +6,24 @@ class ReservaProductoInline(admin.TabularInline):
     extra = 1
 
     def get_formset(self, request, obj=None, **kwargs):
-        # Call the parent get_formset method
+        # Get the formset from the parent class
         formset = super().get_formset(request, obj, **kwargs)
 
-        # Iterate through each form in the formset, ensuring formset.forms is an iterable
+        # Ensure formset is correctly iterated over
         if hasattr(formset, 'forms'):
             for form in formset.forms:
-                # Ensure the form instance has the 'producto' attribute before accessing it
-                if hasattr(form.instance, 'producto') and form.instance.producto:
-                    if form.instance.producto.es_reservable:
-                        # Display the date field for reservable products
-                        form.fields['fecha_agendamiento'].required = True
-                        form.fields['fecha_agendamiento'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local'})
-                    else:
-                        # Hide the date field for non-reservable products
-                        form.fields['fecha_agendamiento'].widget = forms.HiddenInput()
+                # Make sure the 'producto' exists before checking for 'es_reservable'
+                if hasattr(form.instance, 'producto') and form.instance.producto and form.instance.producto.es_reservable:
+                    # Make 'fecha_agendamiento' visible for reservable products
+                    form.fields['fecha_agendamiento'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local'})
+                    form.fields['fecha_agendamiento'].required = True
+                else:
+                    # Hide 'fecha_agendamiento' for non-reservable products
+                    form.fields['fecha_agendamiento'].widget = forms.HiddenInput()
+                    form.fields['fecha_agendamiento'].required = False
 
         return formset
-    
+
 class PagoInline(admin.TabularInline):
     model = Pago
     extra = 1
