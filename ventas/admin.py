@@ -1,7 +1,45 @@
 from django.contrib import admin
+from django import forms
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio
 
+# Formulario personalizado para elegir los slots de horas según el servicio
+class ReservaServicioInlineForm(forms.ModelForm):
+    class Meta:
+        model = ReservaServicio
+        fields = '__all__'
 
+    def __init__(self, *args, **kwargs):
+        super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
+
+        # Obtener el servicio desde la instancia si existe
+        servicio = self.instance.servicio if self.instance else None
+
+        # Definir las opciones de hora según el tipo de servicio
+        if servicio:
+            if servicio.categoria.nombre == 'Cabañas':
+                self.fields['fecha_agendamiento'].widget = forms.Select(choices=[
+                    ('16:00', '16:00'),
+                ])
+            elif servicio.categoria.nombre == 'Tinas':
+                self.fields['fecha_agendamiento'].widget = forms.Select(choices=[
+                    ('14:00', '14:00'),
+                    ('14:30', '14:30'),
+                    ('17:00', '17:00'),
+                    ('19:00', '19:00'),
+                    ('19:30', '19:30'),
+                    ('21:30', '21:30'),
+                    ('22:00', '22:00'),
+                ])
+            elif servicio.categoria.nombre == 'Masajes':
+                self.fields['fecha_agendamiento'].widget = forms.Select(choices=[
+                    ('13:00', '13:00'),
+                    ('14:15', '14:15'),
+                    ('15:30', '15:30'),
+                    ('16:45', '16:45'),
+                    ('18:00', '18:00'),
+                    ('19:15', '19:15'),
+                    ('20:30', '20:30'),
+                ])
 class ReservaProductoInline(admin.TabularInline):
     model = ReservaProducto
     extra = 1
@@ -9,8 +47,8 @@ class ReservaProductoInline(admin.TabularInline):
 
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
+    form = ReservaServicioInlineForm  # Usar el formulario personalizado
     extra = 1
-
 
 class PagoInline(admin.TabularInline):
     model = Pago
