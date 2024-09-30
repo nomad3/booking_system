@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.utils import timezone
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio
 from .utils import verificar_disponibilidad
+from django.db.models import Q
 from rest_framework.exceptions import ValidationError
 from .serializers import (
     ProveedorSerializer,
@@ -59,11 +60,39 @@ class ReservaServicioViewSet(viewsets.ModelViewSet):
     queryset = ReservaServicio.objects.all()
     serializer_class = ReservaServicioSerializer
 
-
-
 class VentaReservaViewSet(viewsets.ModelViewSet):
     queryset = VentaReserva.objects.all()
     serializer_class = VentaReservaSerializer
+
+    def get_queryset(self):
+        """
+        Filtra las reservas por cliente, servicio, o fecha.
+        """
+        queryset = super().get_queryset()
+
+        # Filtros por cliente, servicio y fecha
+        cliente_id = self.request.query_params.get('cliente')
+        servicio_id = self.request.query_params.get('servicio')
+        fecha_inicio = self.request.query_params.get('fecha_inicio')
+        fecha_fin = self.request.query_params.get('fecha_fin')
+
+        # Filtrar por cliente
+        if cliente_id:
+            queryset = queryset.filter(cliente_id=cliente_id)
+
+        # Filtrar por servicio
+        if servicio_id:
+            queryset = queryset.filter(servicios__id=servicio_id)
+
+        # Filtrar por rango de fechas
+        if fecha_inicio and fecha_fin:
+            queryset = queryset.filter(fecha_reserva__range=[fecha_inicio, fecha_fin])
+        elif fecha_inicio:
+            queryset = queryset.filter(fecha_reserva__gte=fecha_inicio)
+        elif fecha_fin:
+            queryset = queryset.filter(fecha_reserva__lte=fecha_fin)
+
+        return queryset
 
     def create(self, request, *args, **kwargs):
         data = request.data
@@ -74,7 +103,7 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
         # Crear la venta/reserva
         venta_reserva = VentaReserva.objects.create(cliente_id=cliente_id)
 
-        # Procesar los productos
+        # Procesar los productos (sin lógica de reserva)
         for producto_data in productos:
             producto_id = producto_data.get('producto')
             cantidad = producto_data.get('cantidad')
@@ -88,7 +117,7 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
             producto.reducir_inventario(cantidad)
             venta_reserva.agregar_producto(producto, cantidad)
 
-        # Procesar los servicios
+        # Procesar los servicios (con lógica de reserva)
         for servicio_data in servicios:
             servicio_id = servicio_data.get('servicio')
             fecha_agendamiento = servicio_data.get('fecha_agendamiento')
@@ -113,7 +142,7 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         data = request.data
 
-        # Procesar los productos actualizados
+        # Procesar los productos actualizados (sin lógica de reserva)
         productos = data.get('productos', [])
         for producto_data in productos:
             producto_id = producto_data.get('producto')
@@ -123,10 +152,10 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
             # Verificar si hay inventario suficiente antes de agregar
             if producto.cantidad_disponible < cantidad:
                 raise ValidationError(f"No hay suficiente inventario para el producto {producto.nombre}.")
-            
+
             instance.agregar_producto(producto, cantidad)
 
-        # Procesar los servicios actualizados
+        # Procesar los servicios actualizados (con lógica de reserva)
         servicios = data.get('servicios', [])
         for servicio_data in servicios:
             servicio_id = servicio_data.get('servicio')
@@ -142,6 +171,7 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
         instance.save()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+    
 class PagoViewSet(viewsets.ModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
