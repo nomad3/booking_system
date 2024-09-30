@@ -1,3 +1,4 @@
+
 from rest_framework import viewsets
 from rest_framework.response import Response
 from django.utils import timezone
@@ -12,7 +13,7 @@ from .serializers import (
     ReservaProductoSerializer,
     ServicioSerializer,
     ReservaServicioSerializer,
-    CategoriaServicioSerializer  
+    CategoriaServicioSerializer
 )
 
 
@@ -38,7 +39,7 @@ class ServicioViewSet(viewsets.ModelViewSet):
 
 class CategoriaServicioViewSet(viewsets.ModelViewSet):
     queryset = CategoriaServicio.objects.all()
-    serializer_class = CategoriaServicioSerializer  # Fixed
+    serializer_class = CategoriaServicioSerializer
 
 
 class ClienteViewSet(viewsets.ModelViewSet):
@@ -63,38 +64,27 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         data = request.data
         cliente_id = data.get('cliente')
-        productos_data = data.get('productos', [])
-        servicios_data = data.get('servicios', [])
-        fecha_reserva = data.get('fecha_reserva')
+        productos = data.get('productos')
+        servicios = data.get('servicios')
 
-        # Verificación del cliente
-        cliente = get_object_or_404(Cliente, id=cliente_id)
-        
-        # Crear la instancia de VentaReserva
-        venta_reserva = VentaReserva.objects.create(
-            cliente=cliente,
-            fecha_reserva=fecha_reserva
-        )
+        venta_reserva = VentaReserva.objects.create(cliente_id=cliente_id)
 
-        # Agregar productos a la reserva
-        for producto_data in productos_data:
+        for producto_data in productos:
             producto_id = producto_data.get('producto')
-            cantidad = producto_data.get('cantidad', 1)
-            producto = get_object_or_404(Producto, id=producto_id)
+            cantidad = producto_data.get('cantidad')
+            producto = Producto.objects.get(id=producto_id)
             venta_reserva.reservaprodutos.create(producto=producto, cantidad=cantidad)
+            producto.reducir_inventario(cantidad)
 
-        # Agregar servicios a la reserva
-        for servicio_data in servicios_data:
+        for servicio_data in servicios:
             servicio_id = servicio_data.get('servicio')
             fecha_agendamiento = servicio_data.get('fecha_agendamiento')
-            servicio = get_object_or_404(Servicio, id=servicio_id)
+            servicio = Servicio.objects.get(id=servicio_id)
             venta_reserva.reservaservicios.create(servicio=servicio, fecha_agendamiento=fecha_agendamiento)
 
-        # Calcular el total después de agregar productos y servicios
         venta_reserva.calcular_total()
         venta_reserva.save()
 
-        # Serializar la respuesta con los datos actualizados
         serializer = self.get_serializer(venta_reserva)
         return Response(serializer.data)
 
@@ -113,10 +103,8 @@ class PagoViewSet(viewsets.ModelViewSet):
         monto = data.get('monto')
         metodo_pago = data.get('metodo_pago')
 
-        # Verificación de la venta/reserva
-        venta_reserva = get_object_or_404(VentaReserva, id=venta_reserva_id)
+        venta_reserva = VentaReserva.objects.get(id=venta_reserva_id)
 
-        # Registrar el pago
         pago = Pago.objects.create(
             venta_reserva=venta_reserva,
             monto=monto,
@@ -124,11 +112,9 @@ class PagoViewSet(viewsets.ModelViewSet):
             fecha_pago=timezone.now()
         )
 
-        # Actualizar los montos en la venta/reserva
         venta_reserva.pagado += pago.monto
         venta_reserva.saldo_pendiente = venta_reserva.total - venta_reserva.pagado
 
-        # Actualizar el estado de la venta/reserva según los pagos
         if venta_reserva.saldo_pendiente <= 0:
             venta_reserva.estado = 'pagado'
         elif 0 < venta_reserva.saldo_pendiente < venta_reserva.total:
