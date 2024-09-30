@@ -127,6 +127,7 @@ def registrar_movimiento_eliminacion_servicio(sender, instance, **kwargs):
         descripcion=descripcion
     )
 
+# Actualización automática del total y saldo pendiente cuando se añaden o eliminan productos y servicios
 @receiver(post_save, sender=ReservaProducto)
 @receiver(post_delete, sender=ReservaProducto)
 def actualizar_total_reserva_producto(sender, instance, **kwargs):

@@ -19,6 +19,7 @@ class PagoInline(admin.TabularInline):
 
 class VentaReservaAdmin(admin.ModelAdmin):
     list_display = ('cliente', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado')
+    readonly_fields = ('total','pagado','saldo_pendiente')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
 
 class ProveedorAdmin(admin.ModelAdmin):

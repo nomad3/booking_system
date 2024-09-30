@@ -74,6 +74,7 @@ class VentaReserva(models.Model):
         return f"Venta/Reserva #{self.id} de {self.cliente}"
 
     def calcular_total(self):
+        """Calcula el total de la venta/reserva sumando productos y servicios."""
         total = 0
         # Sumar los productos
         for reserva_producto in self.reservaprodutos.all():
@@ -88,6 +89,7 @@ class VentaReserva(models.Model):
         self.save()
 
     def actualizar_saldo(self):
+        """Actualiza el saldo pendiente basado en los pagos realizados."""
         self.saldo_pendiente = self.total - self.pagado
         if self.saldo_pendiente <= 0:
             self.estado = 'pagado'
@@ -97,16 +99,34 @@ class VentaReserva(models.Model):
             self.estado = 'pendiente'
         self.save()
 
+    def registrar_pago(self, monto, metodo_pago):
+        """Registra un pago, actualiza el saldo y el estado de la reserva."""
+        nuevo_pago = Pago.objects.create(
+            venta_reserva=self,
+            monto=monto,
+            metodo_pago=metodo_pago
+        )
+        self.pagado += monto
+        self.actualizar_saldo()
+        return nuevo_pago
 class Pago(models.Model):
+    METODOS_PAGO = [
+        ('tarjeta', 'Tarjeta de Crédito/Débito'),
+        ('efectivo', 'Efectivo'),
+        ('transferencia', 'Transferencia Bancaria'),
+        ('webpay', 'WebPay'),
+    ]
+
     venta_reserva = models.ForeignKey(VentaReserva, related_name='pagos', on_delete=models.CASCADE)
     fecha_pago = models.DateTimeField(default=timezone.now)
     monto = models.DecimalField(max_digits=10, decimal_places=2)
-    metodo_pago = models.CharField(max_length=100)
+    metodo_pago = models.CharField(max_length=100, choices=METODOS_PAGO)  # Agregando opciones de métodos de pago
 
     def __str__(self):
         return f"Pago de {self.monto} para {self.venta_reserva}"
 
     def save(self, *args, **kwargs):
+        # Actualizar la reserva con el monto pagado antes de guardar
         super().save(*args, **kwargs)
         self.venta_reserva.pagado += self.monto
         self.venta_reserva.actualizar_saldo()

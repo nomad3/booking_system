@@ -39,27 +39,45 @@ class ClienteSerializer(serializers.ModelSerializer):
 
 
 class ReservaProductoSerializer(serializers.ModelSerializer):
+    producto = ProductoSerializer(read_only=True)
+
     class Meta:
         model = ReservaProducto
         fields = '__all__'
 
 
 class ReservaServicioSerializer(serializers.ModelSerializer):
+    servicio = ServicioSerializer(read_only=True)
+
     class Meta:
         model = ReservaServicio
         fields = '__all__'
 
 
+class PagoSerializer(serializers.ModelSerializer):
+    METODOS_PAGO = [
+        ('tarjeta', 'Tarjeta de Crédito/Débito'),
+        ('efectivo', 'Efectivo'),
+        ('transferencia', 'Transferencia Bancaria'),
+    ]
+
+    metodo_pago = serializers.ChoiceField(choices=METODOS_PAGO)
+
+    class Meta:
+        model = Pago
+        fields = ['id', 'venta_reserva', 'fecha_pago', 'monto', 'metodo_pago']
+        read_only_fields = ['venta_reserva', 'fecha_pago']
+
+
 class VentaReservaSerializer(serializers.ModelSerializer):
-    reservaprodutos = ReservaProductoSerializer(many=True, read_only=True)
-    reservaservicios = ReservaServicioSerializer(many=True, read_only=True)
+    pagos = PagoSerializer(many=True, read_only=True)
+    productos = ReservaProductoSerializer(many=True, read_only=True, source='reservaprodutos')
+    servicios = ReservaServicioSerializer(many=True, read_only=True, source='reservaservicios')
+    total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    pagado = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    saldo_pendiente = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = VentaReserva
-        fields = '__all__'
-
-
-class PagoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Pago
-        fields = '__all__'
+        fields = ['id', 'cliente', 'productos', 'servicios', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado', 'pagos']
+        read_only_fields = ['total', 'pagado', 'saldo_pendiente']
