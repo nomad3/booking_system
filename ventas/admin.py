@@ -8,21 +8,23 @@ class ReservaProductoInline(admin.TabularInline):
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
 
-        def update_form(form):
-            # Ensure producto exists before checking if it's reservable
-            if form.instance and form.instance.producto_id:
-                producto = form.instance.producto
-                if producto.es_reservable:
-                    form.base_fields['fecha_agendamiento'].required = True
+        def formfield_callback(field, **form_kwargs):
+            if field.name == 'fecha_agendamiento':
+                form_kwargs['required'] = False
+            return field.formfield(**form_kwargs)
+
+        # Add a check if form.instance exists and has a valid product
+        for form in formset.forms:
+            if hasattr(form.instance, 'producto') and form.instance.producto:
+                if form.instance.producto.es_reservable:
+                    # Display date field for reservable products
+                    form.fields['fecha_agendamiento'].required = True
+                    form.fields['fecha_agendamiento'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local'})
                 else:
-                    form.base_fields['fecha_agendamiento'].widget = admin.widgets.AdminTextInputWidget()
-                    form.base_fields['fecha_agendamiento'].required = False
+                    # Hide date field for non-reservable products
+                    form.fields['fecha_agendamiento'].widget = forms.HiddenInput()
 
-        for form in formset():
-            update_form(form)
-        
         return formset
-
 class PagoInline(admin.TabularInline):
     model = Pago
     extra = 1
