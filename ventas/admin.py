@@ -21,6 +21,8 @@ class VentaReservaAdmin(admin.ModelAdmin):
     list_display = ('cliente', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado')
     readonly_fields = ('total','pagado','saldo_pendiente')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
+    list_filter = ('cliente', 'servicios', 'fecha_reserva','estado')
+    search_fields = ('cliente__nombre', 'cliente__email','cliente__telefono')
 
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
