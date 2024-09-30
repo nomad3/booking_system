@@ -124,12 +124,15 @@ class ReservaProducto(models.Model):
     venta_reserva = models.ForeignKey('VentaReserva', on_delete=models.CASCADE, related_name='reservaprodutos')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField()
-    fecha_agendamiento = models.DateTimeField(null=True, blank=True)
+    fecha_agendamiento = models.DateTimeField(null=True, blank=True)  # Only relevant for reservable products
 
     def __str__(self):
         return f"{self.cantidad} x {self.producto.nombre} en Venta/Reserva #{self.venta_reserva.id}"
 
-
+    def clean(self):
+        # Validate that fecha_agendamiento is only provided for reservable products
+        if self.producto and not self.producto.es_reservable and self.fecha_agendamiento:
+            raise ValidationError("Fecha de agendamiento no es válida para productos no reservables.")
 class Pago(models.Model):
     venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='pagos')
     fecha_pago = models.DateTimeField(auto_now_add=True)

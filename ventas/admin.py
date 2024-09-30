@@ -11,16 +11,14 @@ class ReservaProductoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Ensure instance.producto exists before trying to access its fields
-        if self.instance and self.instance.pk and self.instance.producto:
+        # Hide 'fecha_agendamiento' if the product is not reservable or if there's no product yet
+        if self.instance and self.instance.producto:
             if not self.instance.producto.es_reservable:
-                # Hide 'fecha_agendamiento' for non-reservable products
-                self.fields['fecha_agendamiento'].widget = forms.HiddenInput()
+                self.fields['fecha_agendamiento'].widget = forms.HiddenInput()  # Hide for non-reservable products
             else:
-                self.fields['fecha_agendamiento'].required = True
+                self.fields['fecha_agendamiento'].required = True  # Show and require for reservable products
         else:
-            # If instance doesn't exist yet, don't show the fecha_agendamiento field
-            self.fields['fecha_agendamiento'].widget = forms.HiddenInput()
+            self.fields['fecha_agendamiento'].widget = forms.HiddenInput()  # Hide until product is selected
 
 
 class ReservaProductoInline(admin.TabularInline):
