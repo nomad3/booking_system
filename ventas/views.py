@@ -61,10 +61,56 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
         for producto_data in productos_data:
             producto_id = producto_data.get('producto')
             cantidad = producto_data.get('cantidad', 1)
+            fecha_agendamiento = producto_data.get('fecha_agendamiento')
+
             producto = Producto.objects.get(id=producto_id)
-            venta_reserva.agregar_producto(producto, cantidad)
+
+            if producto.es_reservable:
+                ReservaProducto.objects.create(
+                    venta_reserva=venta_reserva,
+                    producto=producto,
+                    cantidad=cantidad,
+                    fecha_agendamiento=fecha_agendamiento
+                )
+            else:
+                ReservaProducto.objects.create(
+                    venta_reserva=venta_reserva,
+                    producto=producto,
+                    cantidad=cantidad
+                )
 
         venta_reserva.calcular_total()
+        venta_reserva.save()
+
+        serializer = self.get_serializer(venta_reserva)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        venta_reserva = self.get_object()
+        data = request.data
+        productos_data = data.get('productos', [])
+
+        # Add or update products in the VentaReserva
+        for producto_data in productos_data:
+            producto_id = producto_data.get('producto')
+            cantidad = producto_data.get('cantidad', 1)
+            fecha_agendamiento = producto_data.get('fecha_agendamiento')
+
+            producto = Producto.objects.get(id=producto_id)
+
+            # Update or add a new ReservaProducto
+            reserva_producto, created = ReservaProducto.objects.get_or_create(
+                venta_reserva=venta_reserva,
+                producto=producto,
+                defaults={'cantidad': cantidad, 'fecha_agendamiento': fecha_agendamiento}
+            )
+            if not created:
+                reserva_producto.cantidad = cantidad
+                reserva_producto.fecha_agendamiento = fecha_agendamiento
+                reserva_producto.save()
+
+        venta_reserva.calcular_total()
+        venta_reserva.actualizar_pago()
         venta_reserva.save()
 
         serializer = self.get_serializer(venta_reserva)

@@ -1,6 +1,16 @@
 from django.db import models
 from django.utils import timezone
 
+
+class Cliente(models.Model):
+    nombre = models.CharField(max_length=255)
+    email = models.EmailField()
+    telefono = models.CharField(max_length=20, null=True, blank=True)
+
+    def __str__(self):
+        return self.nombre
+
+
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=255)
     contacto = models.CharField(max_length=255, null=True, blank=True)
@@ -36,15 +46,17 @@ class Producto(models.Model):
         if not fecha_reserva:
             fecha_reserva = timezone.now()
 
-        # Business logic to handle dynamic prices, seasonal offers, etc.
-        precios_dinamicos = PrecioDinamico.objects.filter(
-            producto=self,
-            fecha_inicio__lte=fecha_reserva,
-            fecha_fin__gte=fecha_reserva
-        )
+        # Check for dynamic pricing rules
+        reglas = PrecioDinamico.objects.filter(producto=self)
 
-        if precios_dinamicos.exists():
-            return precios_dinamicos.first().precio
+        # Apply dynamic pricing rules based on reservation time (if applicable)
+        reglas = reglas.filter(
+            models.Q(fecha_inicio__isnull=True) | models.Q(fecha_inicio__lte=fecha_reserva.date()),
+            models.Q(fecha_fin__isnull=True) | models.Q(fecha_fin__gte=fecha_reserva.date())
+        ).order_by('-prioridad')
+
+        if reglas.exists():
+            return reglas.first().precio
 
         return self.precio_base
 
@@ -59,19 +71,10 @@ class PrecioDinamico(models.Model):
         return f"{self.producto.nombre} - {self.precio}"
 
 
-class Cliente(models.Model):
-    nombre = models.CharField(max_length=255)
-    email = models.EmailField()
-    telefono = models.CharField(max_length=20, null=True, blank=True)
-
-    def __str__(self):
-        return self.nombre
-
-
 class VentaReserva(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     productos = models.ManyToManyField(Producto, through='ReservaProducto')
-    fecha_reserva = models.DateTimeField(null=True, blank=True)
+    fecha_reserva = models.DateTimeField(null=True, blank=True)  # Fecha de la reserva para productos reservables
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     saldo_pendiente = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -92,9 +95,8 @@ class VentaReserva(models.Model):
     def calcular_total(self):
         total = 0
         for reserva_producto in self.reservaprodutos.all():
-            if reserva_producto.producto:
-                precio = reserva_producto.producto.obtener_precio_actual(self.fecha_reserva)
-                total += precio * reserva_producto.cantidad
+            precio = reserva_producto.producto.obtener_precio_actual(self.fecha_reserva)
+            total += precio * reserva_producto.cantidad
         self.total = total
         self.save()
 
@@ -111,27 +113,16 @@ class VentaReserva(models.Model):
             self.estado = 'pendiente'
         self.save(update_fields=['pagado', 'saldo_pendiente', 'estado'])
 
+
 class ReservaProducto(models.Model):
     venta_reserva = models.ForeignKey('VentaReserva', on_delete=models.CASCADE, related_name='reservaprodutos')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField()
-    fecha_agendamiento = models.DateTimeField(null=True, blank=True)  # Only relevant for reservable products
+    fecha_agendamiento = models.DateTimeField(null=True, blank=True)  # Fecha para agendar productos reservables
 
     def __str__(self):
-        if self.producto:
-            return f"{self.cantidad} x {self.producto.nombre} en Venta/Reserva #{self.venta_reserva.id}"
-        return "ReservaProducto without producto"
+        return f"{self.cantidad} x {self.producto.nombre} en Venta/Reserva #{self.venta_reserva.id}"
 
-    def clean(self):
-        # Validate that fecha_agendamiento is only provided for reservable products
-        if self.producto and not self.producto.es_reservable and self.fecha_agendamiento:
-            raise ValidationError("Fecha de agendamiento no es válida para productos no reservables.")
-
-    def save(self, *args, **kwargs):
-        # Ensure producto is available before proceeding
-        if not self.producto:
-            raise ValidationError("Debe seleccionar un producto antes de guardar.")
-        super().save(*args, **kwargs)
 
 class Pago(models.Model):
     venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='pagos')
@@ -145,8 +136,9 @@ class Pago(models.Model):
     ])
 
     def __str__(self):
-        return f"Pago de {self.monto} para Venta/Reserva #{self.venta_reserva.id}"
+        return f'Pago de {self.monto} para Venta/Reserva #{self.venta_reserva.id}'
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
+        super(Pago, self).save(*args, **kwargs)
+        # Update the paid amount in the associated VentaReserva
         self.venta_reserva.actualizar_pago()
