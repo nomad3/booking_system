@@ -118,7 +118,9 @@ class ReservaProducto(models.Model):
     fecha_agendamiento = models.DateTimeField(null=True, blank=True)  # Only relevant for reservable products
 
     def __str__(self):
-        return f"{self.cantidad} x {self.producto.nombre} en Venta/Reserva #{self.venta_reserva.id}"
+        if self.producto:
+            return f"{self.cantidad} x {self.producto.nombre} en Venta/Reserva #{self.venta_reserva.id}"
+        return "ReservaProducto without producto"
 
     def clean(self):
         # Validate that fecha_agendamiento is only provided for reservable products
