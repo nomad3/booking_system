@@ -1,16 +1,18 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
-from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, ReservaServicio, Cliente, Pago, Servicio
+from django.utils import timezone
+from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio
 from .serializers import (
     ProveedorSerializer,
     CategoriaProductoSerializer,
     ProductoSerializer,
-    ServicioSerializer,
     VentaReservaSerializer,
     ClienteSerializer,
     PagoSerializer,
     ReservaProductoSerializer,
-    ReservaServicioSerializer
+    ServicioSerializer,
+    ReservaServicioSerializer,
+    CategoriaServicioSerializer  # Correctly imported
 )
 
 
@@ -32,6 +34,11 @@ class ProductoViewSet(viewsets.ModelViewSet):
 class ServicioViewSet(viewsets.ModelViewSet):
     queryset = Servicio.objects.all()
     serializer_class = ServicioSerializer
+
+
+class CategoriaServicioViewSet(viewsets.ModelViewSet):
+    queryset = CategoriaServicio.objects.all()
+    serializer_class = CategoriaServicioSerializer  # Fixed
 
 
 class ClienteViewSet(viewsets.ModelViewSet):
@@ -60,28 +67,23 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
         servicios_data = data.get('servicios', [])
         fecha_reserva = data.get('fecha_reserva')
 
-        # Get the client instance
         cliente = Cliente.objects.get(id=cliente_id)
-
-        # Create the VentaReserva
         venta_reserva = VentaReserva.objects.create(
             cliente=cliente,
             fecha_reserva=fecha_reserva
         )
 
-        # Add products to the VentaReserva
         for producto_data in productos_data:
             producto_id = producto_data.get('producto')
             cantidad = producto_data.get('cantidad', 1)
             producto = Producto.objects.get(id=producto_id)
-            ReservaProducto.objects.create(venta_reserva=venta_reserva, producto=producto, cantidad=cantidad)
+            venta_reserva.reservaprodutos.create(producto=producto, cantidad=cantidad)
 
-        # Add services to the VentaReserva
         for servicio_data in servicios_data:
             servicio_id = servicio_data.get('servicio')
             fecha_agendamiento = servicio_data.get('fecha_agendamiento')
             servicio = Servicio.objects.get(id=servicio_id)
-            ReservaServicio.objects.create(venta_reserva=venta_reserva, servicio=servicio, fecha_agendamiento=fecha_agendamiento)
+            venta_reserva.reservaservicios.create(servicio=servicio, fecha_agendamiento=fecha_agendamiento)
 
         venta_reserva.calcular_total()
         venta_reserva.save()
@@ -100,10 +102,8 @@ class PagoViewSet(viewsets.ModelViewSet):
         monto = data.get('monto')
         metodo_pago = data.get('metodo_pago')
 
-        # Get the VentaReserva instance
         venta_reserva = VentaReserva.objects.get(id=venta_reserva_id)
 
-        # Create the Pago
         pago = Pago.objects.create(
             venta_reserva=venta_reserva,
             monto=monto,

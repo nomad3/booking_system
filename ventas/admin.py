@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, ReservaServicio, Pago, Cliente, Servicio
+from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio
 
 
 class ReservaProductoInline(admin.TabularInline):
@@ -19,14 +19,8 @@ class PagoInline(admin.TabularInline):
 
 class VentaReservaAdmin(admin.ModelAdmin):
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
-    list_display = ('id', 'cliente', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado')
+    list_display = ('id', 'cliente', 'fecha_creacion', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado')
     search_fields = ['cliente__nombre']
-    list_filter = ['estado']
-
-    def get_readonly_fields(self, request, obj=None):
-        if obj:  # When updating an existing object
-            return ['total', 'pagado', 'saldo_pendiente', 'estado']
-        return []
 
 
 class ProveedorAdmin(admin.ModelAdmin):
@@ -38,25 +32,21 @@ class CategoriaProductoAdmin(admin.ModelAdmin):
 
 
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'precio_base', 'categoria', 'cantidad_disponible')
-
-
-class ServicioAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'precio_base', 'duracion')
+    list_display = ('nombre', 'precio_base', 'cantidad_disponible', 'categoria', 'proveedor')
 
 
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'email', 'telefono')
 
 
-class PagoAdmin(admin.ModelAdmin):
-    list_display = ('venta_reserva', 'monto', 'metodo_pago')
+class ServicioAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'precio_base', 'duracion', 'categoria', 'proveedor')
 
 
 admin.site.register(Proveedor, ProveedorAdmin)
 admin.site.register(CategoriaProducto, CategoriaProductoAdmin)
 admin.site.register(Producto, ProductoAdmin)
-admin.site.register(Servicio, ServicioAdmin)
 admin.site.register(VentaReserva, VentaReservaAdmin)
 admin.site.register(Cliente, ClienteAdmin)
-admin.site.register(Pago, PagoAdmin)
+admin.site.register(Servicio, ServicioAdmin)
+admin.site.register(CategoriaServicio)
