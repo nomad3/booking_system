@@ -101,7 +101,8 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         instance = serializer.save()
         instance.calcular_total()
-        
+
+
 class PagoViewSet(viewsets.ModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer
@@ -112,15 +113,29 @@ class PagoViewSet(viewsets.ModelViewSet):
         monto = data.get('monto')
         metodo_pago = data.get('metodo_pago')
 
-        venta_reserva = VentaReserva.objects.get(id=venta_reserva_id)
+        # Verificación de la venta/reserva
+        venta_reserva = get_object_or_404(VentaReserva, id=venta_reserva_id)
 
+        # Registrar el pago
         pago = Pago.objects.create(
             venta_reserva=venta_reserva,
             monto=monto,
-            metodo_pago=metodo_pago
+            metodo_pago=metodo_pago,
+            fecha_pago=timezone.now()
         )
 
-        venta_reserva.actualizar_pago()
+        # Actualizar los montos en la venta/reserva
+        venta_reserva.pagado += pago.monto
+        venta_reserva.saldo_pendiente = venta_reserva.total - venta_reserva.pagado
+
+        # Actualizar el estado de la venta/reserva según los pagos
+        if venta_reserva.saldo_pendiente <= 0:
+            venta_reserva.estado = 'pagado'
+        elif 0 < venta_reserva.saldo_pendiente < venta_reserva.total:
+            venta_reserva.estado = 'parcial'
+        else:
+            venta_reserva.estado = 'pendiente'
+
         venta_reserva.save()
 
         serializer = self.get_serializer(pago)
