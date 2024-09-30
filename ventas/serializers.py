@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Proveedor, CategoriaProducto, Producto, Servicio, VentaReserva, Cliente, Pago, ReservaProducto, ReservaServicio
+from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, ReservaServicio, Cliente, Pago, Servicio
 
 
 class ProveedorSerializer(serializers.ModelSerializer):
@@ -32,12 +32,6 @@ class ClienteSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class PagoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Pago
-        fields = '__all__'
-
-
 class ReservaProductoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReservaProducto
@@ -51,10 +45,15 @@ class ReservaServicioSerializer(serializers.ModelSerializer):
 
 
 class VentaReservaSerializer(serializers.ModelSerializer):
-    productos = ReservaProductoSerializer(many=True, read_only=True, source='reservaproductos')
-    servicios = ReservaServicioSerializer(many=True, read_only=True, source='reservaservicios')
-    pagos = PagoSerializer(many=True, read_only=True)
+    productos = ReservaProductoSerializer(many=True, read_only=True)
+    servicios = ReservaServicioSerializer(many=True, read_only=True)
 
     class Meta:
         model = VentaReserva
+        fields = '__all__'
+
+
+class PagoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Pago
         fields = '__all__'

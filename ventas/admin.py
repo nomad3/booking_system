@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Proveedor, CategoriaProducto, Producto, Servicio, VentaReserva, ReservaProducto, ReservaServicio, Pago, Cliente, MovimientoCliente
+from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, ReservaServicio, Pago, Cliente, Servicio
 
 
 class ReservaProductoInline(admin.TabularInline):
@@ -19,8 +19,14 @@ class PagoInline(admin.TabularInline):
 
 class VentaReservaAdmin(admin.ModelAdmin):
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
-    list_display = ('id', 'cliente', 'total', 'pagado', 'saldo_pendiente', 'estado')
+    list_display = ('id', 'cliente', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado')
     search_fields = ['cliente__nombre']
+    list_filter = ['estado']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # When updating an existing object
+            return ['total', 'pagado', 'saldo_pendiente', 'estado']
+        return []
 
 
 class ProveedorAdmin(admin.ModelAdmin):
@@ -32,19 +38,19 @@ class CategoriaProductoAdmin(admin.ModelAdmin):
 
 
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'precio_base', 'categoria', 'cantidad_disponible', 'proveedor')
+    list_display = ('nombre', 'precio_base', 'categoria', 'cantidad_disponible')
 
 
 class ServicioAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'duracion', 'precio_base')
+    list_display = ('nombre', 'precio_base', 'duracion')
 
 
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'email', 'telefono')
 
 
-class MovimientoClienteAdmin(admin.ModelAdmin):
-    list_display = ('cliente', 'tipo_movimiento', 'descripcion', 'fecha')
+class PagoAdmin(admin.ModelAdmin):
+    list_display = ('venta_reserva', 'monto', 'metodo_pago')
 
 
 admin.site.register(Proveedor, ProveedorAdmin)
@@ -53,4 +59,4 @@ admin.site.register(Producto, ProductoAdmin)
 admin.site.register(Servicio, ServicioAdmin)
 admin.site.register(VentaReserva, VentaReservaAdmin)
 admin.site.register(Cliente, ClienteAdmin)
-admin.site.register(MovimientoCliente, MovimientoClienteAdmin)
+admin.site.register(Pago, PagoAdmin)

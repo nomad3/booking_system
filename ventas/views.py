@@ -60,23 +60,23 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
         servicios_data = data.get('servicios', [])
         fecha_reserva = data.get('fecha_reserva')
 
-        # Obtener cliente
+        # Get the client instance
         cliente = Cliente.objects.get(id=cliente_id)
 
-        # Crear VentaReserva
+        # Create the VentaReserva
         venta_reserva = VentaReserva.objects.create(
             cliente=cliente,
             fecha_reserva=fecha_reserva
         )
 
-        # Añadir productos
+        # Add products to the VentaReserva
         for producto_data in productos_data:
             producto_id = producto_data.get('producto')
             cantidad = producto_data.get('cantidad', 1)
             producto = Producto.objects.get(id=producto_id)
             ReservaProducto.objects.create(venta_reserva=venta_reserva, producto=producto, cantidad=cantidad)
 
-        # Añadir servicios
+        # Add services to the VentaReserva
         for servicio_data in servicios_data:
             servicio_id = servicio_data.get('servicio')
             fecha_agendamiento = servicio_data.get('fecha_agendamiento')
@@ -100,9 +100,10 @@ class PagoViewSet(viewsets.ModelViewSet):
         monto = data.get('monto')
         metodo_pago = data.get('metodo_pago')
 
+        # Get the VentaReserva instance
         venta_reserva = VentaReserva.objects.get(id=venta_reserva_id)
 
-        # Crear pago
+        # Create the Pago
         pago = Pago.objects.create(
             venta_reserva=venta_reserva,
             monto=monto,
