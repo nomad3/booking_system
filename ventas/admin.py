@@ -6,25 +6,24 @@ class ReservaProductoInline(admin.TabularInline):
     extra = 1
 
     def get_formset(self, request, obj=None, **kwargs):
+        # Call the parent get_formset method
         formset = super().get_formset(request, obj, **kwargs)
 
-        def formfield_callback(field, **form_kwargs):
-            if field.name == 'fecha_agendamiento':
-                form_kwargs['required'] = False
-            return field.formfield(**form_kwargs)
-
-        # Add a check if form.instance exists and has a valid product
-        for form in formset.forms:
-            if hasattr(form.instance, 'producto') and form.instance.producto:
-                if form.instance.producto.es_reservable:
-                    # Display date field for reservable products
-                    form.fields['fecha_agendamiento'].required = True
-                    form.fields['fecha_agendamiento'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local'})
-                else:
-                    # Hide date field for non-reservable products
-                    form.fields['fecha_agendamiento'].widget = forms.HiddenInput()
+        # Iterate through each form in the formset, ensuring formset.forms is an iterable
+        if hasattr(formset, 'forms'):
+            for form in formset.forms:
+                # Ensure the form instance has the 'producto' attribute before accessing it
+                if hasattr(form.instance, 'producto') and form.instance.producto:
+                    if form.instance.producto.es_reservable:
+                        # Display the date field for reservable products
+                        form.fields['fecha_agendamiento'].required = True
+                        form.fields['fecha_agendamiento'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local'})
+                    else:
+                        # Hide the date field for non-reservable products
+                        form.fields['fecha_agendamiento'].widget = forms.HiddenInput()
 
         return formset
+    
 class PagoInline(admin.TabularInline):
     model = Pago
     extra = 1
