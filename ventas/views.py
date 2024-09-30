@@ -12,7 +12,7 @@ from .serializers import (
     ReservaProductoSerializer,
     ServicioSerializer,
     ReservaServicioSerializer,
-    CategoriaServicioSerializer  # Correctly imported
+    CategoriaServicioSerializer  
 )
 
 
@@ -67,31 +67,41 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
         servicios_data = data.get('servicios', [])
         fecha_reserva = data.get('fecha_reserva')
 
-        cliente = Cliente.objects.get(id=cliente_id)
+        # Verificación del cliente
+        cliente = get_object_or_404(Cliente, id=cliente_id)
+        
+        # Crear la instancia de VentaReserva
         venta_reserva = VentaReserva.objects.create(
             cliente=cliente,
             fecha_reserva=fecha_reserva
         )
 
+        # Agregar productos a la reserva
         for producto_data in productos_data:
             producto_id = producto_data.get('producto')
             cantidad = producto_data.get('cantidad', 1)
-            producto = Producto.objects.get(id=producto_id)
+            producto = get_object_or_404(Producto, id=producto_id)
             venta_reserva.reservaprodutos.create(producto=producto, cantidad=cantidad)
 
+        # Agregar servicios a la reserva
         for servicio_data in servicios_data:
             servicio_id = servicio_data.get('servicio')
             fecha_agendamiento = servicio_data.get('fecha_agendamiento')
-            servicio = Servicio.objects.get(id=servicio_id)
+            servicio = get_object_or_404(Servicio, id=servicio_id)
             venta_reserva.reservaservicios.create(servicio=servicio, fecha_agendamiento=fecha_agendamiento)
 
+        # Calcular el total después de agregar productos y servicios
         venta_reserva.calcular_total()
         venta_reserva.save()
 
+        # Serializar la respuesta con los datos actualizados
         serializer = self.get_serializer(venta_reserva)
         return Response(serializer.data)
 
-
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        instance.calcular_total()
+        
 class PagoViewSet(viewsets.ModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer

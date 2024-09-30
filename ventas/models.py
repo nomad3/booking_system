@@ -73,6 +73,30 @@ class VentaReserva(models.Model):
     def __str__(self):
         return f"Venta/Reserva #{self.id} de {self.cliente}"
 
+    def calcular_total(self):
+        total = 0
+        # Sumar los productos
+        for reserva_producto in self.reservaprodutos.all():
+            total += reserva_producto.producto.precio_base * reserva_producto.cantidad
+        
+        # Sumar los servicios
+        for reserva_servicio in self.reservaservicios.all():
+            total += reserva_servicio.servicio.precio_base
+
+        self.total = total
+        self.saldo_pendiente = total - self.pagado
+        self.save()
+
+    def actualizar_saldo(self):
+        self.saldo_pendiente = self.total - self.pagado
+        if self.saldo_pendiente <= 0:
+            self.estado = 'pagado'
+        elif self.pagado > 0:
+            self.estado = 'parcial'
+        else:
+            self.estado = 'pendiente'
+        self.save()
+
 class Pago(models.Model):
     venta_reserva = models.ForeignKey(VentaReserva, related_name='pagos', on_delete=models.CASCADE)
     fecha_pago = models.DateTimeField(default=timezone.now)
@@ -81,6 +105,11 @@ class Pago(models.Model):
 
     def __str__(self):
         return f"Pago de {self.monto} para {self.venta_reserva}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.venta_reserva.pagado += self.monto
+        self.venta_reserva.actualizar_saldo()
 
 class MovimientoCliente(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)

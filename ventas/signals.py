@@ -126,3 +126,17 @@ def registrar_movimiento_eliminacion_servicio(sender, instance, **kwargs):
         tipo_movimiento=tipo,
         descripcion=descripcion
     )
+
+@receiver(post_save, sender=ReservaProducto)
+@receiver(post_delete, sender=ReservaProducto)
+def actualizar_total_reserva_producto(sender, instance, **kwargs):
+    instance.venta_reserva.calcular_total()
+
+@receiver(post_save, sender=ReservaServicio)
+@receiver(post_delete, sender=ReservaServicio)
+def actualizar_total_reserva_servicio(sender, instance, **kwargs):
+    instance.venta_reserva.calcular_total()
+
+@receiver(post_save, sender=Pago)
+def actualizar_saldo_pago(sender, instance, **kwargs):
+    instance.venta_reserva.actualizar_saldo()

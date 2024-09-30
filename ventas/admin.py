@@ -18,10 +18,13 @@ class PagoInline(admin.TabularInline):
 
 
 class VentaReservaAdmin(admin.ModelAdmin):
-    inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
-    list_display = ('id', 'cliente', 'fecha_creacion', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado')
-    search_fields = ['cliente__nombre']
+    list_display = ['id', 'cliente', 'total', 'estado', 'fecha_creacion', 'fecha_reserva']
+    inlines = [ReservaProductoInline, ReservaServicioInline]
+    readonly_fields = ['total', 'pagado', 'saldo_pendiente']
 
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        obj.calcular_total()
 
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
