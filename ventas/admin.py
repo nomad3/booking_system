@@ -18,13 +18,8 @@ class PagoInline(admin.TabularInline):
 
 
 class VentaReservaAdmin(admin.ModelAdmin):
-    list_display = ['id', 'cliente', 'total', 'estado', 'fecha_creacion', 'fecha_reserva']
-    inlines = [ReservaProductoInline, ReservaServicioInline]
-    readonly_fields = ['total', 'pagado', 'saldo_pendiente']
-
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
-        obj.calcular_total()
+    list_display = ('cliente', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado')
+    inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
 
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
@@ -45,6 +40,10 @@ class ClienteAdmin(admin.ModelAdmin):
 class ServicioAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio_base', 'duracion', 'categoria', 'proveedor')
 
+
+@admin.register(Pago)
+class PagoAdmin(admin.ModelAdmin):
+    list_display = ('venta_reserva', 'monto', 'metodo_pago', 'fecha_pago')
 
 admin.site.register(Proveedor, ProveedorAdmin)
 admin.site.register(CategoriaProducto, CategoriaProductoAdmin)
