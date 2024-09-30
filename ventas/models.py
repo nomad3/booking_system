@@ -1,12 +1,15 @@
 from django.db import models
+from django.utils import timezone
+
 
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=255)
-    contacto = models.CharField(max_length=255)
-    email = models.EmailField()
+    contacto = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
 
     def __str__(self):
         return self.nombre
+
 
 class CategoriaProducto(models.Model):
     nombre = models.CharField(max_length=255)
@@ -14,23 +17,32 @@ class CategoriaProducto(models.Model):
     def __str__(self):
         return self.nombre
 
+
 class Producto(models.Model):
     nombre = models.CharField(max_length=255)
-    precio_base = models.DecimalField(max_digits=10, decimal_places=2)
     categoria = models.ForeignKey(CategoriaProducto, on_delete=models.CASCADE)
-    cantidad_disponible = models.IntegerField()
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE)
+    precio_base = models.DecimalField(max_digits=10, decimal_places=2)
+    cantidad_disponible = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.nombre
+
+    def obtener_precio_actual(self):
+        return self.precio_base
+
 
 class Servicio(models.Model):
     nombre = models.CharField(max_length=255)
+    duracion = models.DurationField()
     precio_base = models.DecimalField(max_digits=10, decimal_places=2)
-    duracion = models.DurationField()  # Para manejar duración del servicio
-    es_reservable = models.BooleanField(default=True)  # Solo servicios son reservables
 
     def __str__(self):
         return self.nombre
+
+    def obtener_precio_actual(self):
+        return self.precio_base
+
 
 class Cliente(models.Model):
     nombre = models.CharField(max_length=255)
@@ -40,17 +52,23 @@ class Cliente(models.Model):
     def __str__(self):
         return self.nombre
 
+
 class VentaReserva(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
-    productos = models.ManyToManyField(Producto, through='ReservaProducto')
-    servicios = models.ManyToManyField(Servicio, through='ReservaServicio')
-    fecha_reserva = models.DateTimeField(null=True, blank=True)  # Fecha para los servicios reservables
+    productos = models.ManyToManyField(Producto, through='ReservaProducto', blank=True)
+    servicios = models.ManyToManyField(Servicio, through='ReservaServicio', blank=True)
+    fecha_reserva = models.DateTimeField(null=True, blank=True)  # Fecha de la reserva para productos reservables
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     saldo_pendiente = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     estado = models.CharField(
         max_length=20,
-        choices=[('pendiente', 'Pendiente'), ('pagado', 'Pagado'), ('parcial', 'Parcialmente Pagado'), ('cancelado', 'Cancelado')],
+        choices=[
+            ('pendiente', 'Pendiente'),
+            ('pagado', 'Pagado'),
+            ('parcial', 'Parcialmente Pagado'),
+            ('cancelado', 'Cancelado'),
+        ],
         default='pendiente'
     )
 
@@ -59,10 +77,10 @@ class VentaReserva(models.Model):
 
     def calcular_total(self):
         total = 0
-        for reserva_producto in self.reservaproducto_set.all():
-            total += reserva_producto.producto.precio_base * reserva_producto.cantidad
-        for reserva_servicio in self.reservaservicio_set.all():
-            total += reserva_servicio.servicio.precio_base
+        for reserva_producto in self.reservaproductos.all():
+            total += reserva_producto.producto.obtener_precio_actual() * reserva_producto.cantidad
+        for reserva_servicio in self.reservaservicios.all():
+            total += reserva_servicio.servicio.obtener_precio_actual()
         self.total = total
         self.save()
 
@@ -81,7 +99,7 @@ class VentaReserva(models.Model):
 
 
 class ReservaProducto(models.Model):
-    venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE)
+    venta_reserva = models.ForeignKey('VentaReserva', on_delete=models.CASCADE, related_name='reservaproductos')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField()
 
@@ -90,18 +108,29 @@ class ReservaProducto(models.Model):
 
 
 class ReservaServicio(models.Model):
-    venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE)
+    venta_reserva = models.ForeignKey('VentaReserva', on_delete=models.CASCADE, related_name='reservaservicios')
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
-    fecha_agendamiento = models.DateTimeField()  # Fecha de agendamiento para los servicios
+    fecha_agendamiento = models.DateTimeField()  # Fecha para agendar servicios
 
     def __str__(self):
-        return f"{self.servicio.nombre} en Venta/Reserva #{self.venta_reserva.id}"
+        return f"Servicio {self.servicio.nombre} para el {self.fecha_agendamiento}"
 
 
 class Pago(models.Model):
     venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='pagos')
     monto = models.DecimalField(max_digits=10, decimal_places=2)
     metodo_pago = models.CharField(max_length=50)
+    fecha_pago = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"Pago de {self.monto} para Venta/Reserva #{self.venta_reserva.id}"
+
+
+class MovimientoCliente(models.Model):
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
+    tipo_movimiento = models.CharField(max_length=255)
+    descripcion = models.TextField()
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.tipo_movimiento} - {self.cliente.nombre}"
