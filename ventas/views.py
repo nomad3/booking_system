@@ -53,55 +53,28 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
         fecha_reserva = data.get('fecha_reserva')
 
         cliente = Cliente.objects.get(id=cliente_id)
+
+        # Crear VentaReserva
         venta_reserva = VentaReserva.objects.create(
             cliente=cliente,
             fecha_reserva=fecha_reserva
         )
 
+        # Añadir productos (sin fecha)
         for producto_data in productos_data:
             producto_id = producto_data.get('producto')
             cantidad = producto_data.get('cantidad', 1)
             producto = Producto.objects.get(id=producto_id)
-            ReservaProducto.objects.create(
-                venta_reserva=venta_reserva,
-                producto=producto,
-                cantidad=cantidad
-            )
+            ReservaProducto.objects.create(venta_reserva=venta_reserva, producto=producto, cantidad=cantidad)
 
+        # Añadir servicios (con fecha)
         for servicio_data in servicios_data:
             servicio_id = servicio_data.get('servicio')
             fecha_agendamiento = servicio_data.get('fecha_agendamiento')
             servicio = Servicio.objects.get(id=servicio_id)
-            ReservaServicio.objects.create(
-                venta_reserva=venta_reserva,
-                servicio=servicio,
-                fecha_agendamiento=fecha_agendamiento
-            )
+            ReservaServicio.objects.create(venta_reserva=venta_reserva, servicio=servicio, fecha_agendamiento=fecha_agendamiento)
 
         venta_reserva.calcular_total()
-        venta_reserva.save()
-
-        serializer = self.get_serializer(venta_reserva)
-        return Response(serializer.data)
-
-class PagoViewSet(viewsets.ModelViewSet):
-    queryset = Pago.objects.all()
-    serializer_class = PagoSerializer
-
-    def create(self, request, *args, **kwargs):
-        data = request.data
-        venta_reserva_id = data.get('venta_reserva')
-        monto = data.get('monto')
-        metodo_pago = data.get('metodo_pago')
-
-        venta_reserva = VentaReserva.objects.get(id=venta_reserva_id)
-        Pago.objects.create(
-            venta_reserva=venta_reserva,
-            monto=monto,
-            metodo_pago=metodo_pago
-        )
-
-        venta_reserva.actualizar_pago()
         venta_reserva.save()
 
         serializer = self.get_serializer(venta_reserva)

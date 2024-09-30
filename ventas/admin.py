@@ -18,19 +18,6 @@ class VentaReservaAdmin(admin.ModelAdmin):
     list_display = ('id', 'cliente', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado')
     search_fields = ['cliente__nombre']
 
-    def get_formset(self, request, obj=None, **kwargs):
-        formset = super().get_formset(request, obj, **kwargs)
-
-        # Ensure formset.forms is not a cached_property issue
-        if hasattr(formset, 'forms'):
-            for form in formset.forms:
-                if form.instance and hasattr(form.instance, 'producto') and form.instance.producto.es_reservable:
-                    form.fields['fecha_agendamiento'].widget.attrs['style'] = 'display: inline;'
-                else:
-                    form.fields['fecha_agendamiento'].widget.attrs['style'] = 'display: none;'
-
-        return formset
-
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
 
@@ -38,7 +25,10 @@ class CategoriaProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre',)
 
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'precio_base', 'categoria', 'cantidad_disponible', 'es_reservable')
+    list_display = ('nombre', 'precio_base', 'categoria', 'cantidad_disponible')
+
+class ServicioAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'precio_base', 'duracion', 'es_reservable')
 
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'email', 'telefono')
@@ -46,6 +36,6 @@ class ClienteAdmin(admin.ModelAdmin):
 admin.site.register(Proveedor, ProveedorAdmin)
 admin.site.register(CategoriaProducto, CategoriaProductoAdmin)
 admin.site.register(Producto, ProductoAdmin)
+admin.site.register(Servicio, ServicioAdmin)
 admin.site.register(VentaReserva, VentaReservaAdmin)
 admin.site.register(Cliente, ClienteAdmin)
-admin.site.register(Servicio)
