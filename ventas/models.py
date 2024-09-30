@@ -81,7 +81,7 @@ class VentaReserva(models.Model):
             ('pendiente', 'Pendiente'),
             ('pagado', 'Pagado'),
             ('parcial', 'Parcialmente Pagado'),
-            ('cancelado', 'Cancelado')
+            ('cancelado', 'Cancelado'),
         ],
         default='pendiente'
     )
@@ -92,8 +92,9 @@ class VentaReserva(models.Model):
     def calcular_total(self):
         total = 0
         for reserva_producto in self.reservaprodutos.all():
-            precio = reserva_producto.producto.obtener_precio_actual(self.fecha_reserva)
-            total += precio * reserva_producto.cantidad
+            if reserva_producto.producto:
+                precio = reserva_producto.producto.obtener_precio_actual(self.fecha_reserva)
+                total += precio * reserva_producto.cantidad
         self.total = total
         self.save()
 
@@ -110,16 +111,6 @@ class VentaReserva(models.Model):
             self.estado = 'pendiente'
         self.save(update_fields=['pagado', 'saldo_pendiente', 'estado'])
 
-    def agregar_producto(self, producto, cantidad):
-        reserva_producto = ReservaProducto.objects.create(
-            venta_reserva=self,
-            producto=producto,
-            cantidad=cantidad
-        )
-        self.calcular_total()
-        self.actualizar_pago()
-
-
 class ReservaProducto(models.Model):
     venta_reserva = models.ForeignKey('VentaReserva', on_delete=models.CASCADE, related_name='reservaprodutos')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
@@ -133,6 +124,13 @@ class ReservaProducto(models.Model):
         # Validate that fecha_agendamiento is only provided for reservable products
         if self.producto and not self.producto.es_reservable and self.fecha_agendamiento:
             raise ValidationError("Fecha de agendamiento no es válida para productos no reservables.")
+
+    def save(self, *args, **kwargs):
+        # Ensure producto is available before proceeding
+        if not self.producto:
+            raise ValidationError("Debe seleccionar un producto antes de guardar.")
+        super().save(*args, **kwargs)
+
 class Pago(models.Model):
     venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='pagos')
     fecha_pago = models.DateTimeField(auto_now_add=True)

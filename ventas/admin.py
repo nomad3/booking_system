@@ -11,8 +11,8 @@ class ReservaProductoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Hide 'fecha_agendamiento' if the product is not reservable or if there's no product yet
-        if self.instance and self.instance.producto:
+        # Check if a product is selected before applying logic
+        if 'producto' in self.fields and self.instance and self.instance.producto:
             if not self.instance.producto.es_reservable:
                 self.fields['fecha_agendamiento'].widget = forms.HiddenInput()  # Hide for non-reservable products
             else:
