@@ -3,6 +3,8 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from django.utils import timezone
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio
+from .utils import verificar_disponibilidad
+from rest_framework.exceptions import ValidationError
 from .serializers import (
     ProveedorSerializer,
     CategoriaProductoSerializer,
@@ -13,7 +15,8 @@ from .serializers import (
     ReservaProductoSerializer,
     ServicioSerializer,
     ReservaServicioSerializer,
-    CategoriaServicioSerializer
+    CategoriaServicioSerializer,
+    VentaReservaSerializer
 )
 
 
@@ -57,6 +60,7 @@ class ReservaServicioViewSet(viewsets.ModelViewSet):
     serializer_class = ReservaServicioSerializer
 
 
+
 class VentaReservaViewSet(viewsets.ModelViewSet):
     queryset = VentaReserva.objects.all()
     serializer_class = VentaReservaSerializer
@@ -67,32 +71,77 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
         productos = data.get('productos')
         servicios = data.get('servicios')
 
+        # Crear la venta/reserva
         venta_reserva = VentaReserva.objects.create(cliente_id=cliente_id)
 
+        # Procesar los productos
         for producto_data in productos:
             producto_id = producto_data.get('producto')
             cantidad = producto_data.get('cantidad')
             producto = Producto.objects.get(id=producto_id)
-            venta_reserva.reservaprodutos.create(producto=producto, cantidad=cantidad)
-            producto.reducir_inventario(cantidad)
 
+            # Verificar si hay inventario suficiente
+            if producto.cantidad_disponible < cantidad:
+                raise ValidationError(f"No hay suficiente inventario para el producto {producto.nombre}.")
+
+            # Reducir inventario y agregar producto a la reserva
+            producto.reducir_inventario(cantidad)
+            venta_reserva.agregar_producto(producto, cantidad)
+
+        # Procesar los servicios
         for servicio_data in servicios:
             servicio_id = servicio_data.get('servicio')
             fecha_agendamiento = servicio_data.get('fecha_agendamiento')
             servicio = Servicio.objects.get(id=servicio_id)
-            venta_reserva.reservaservicios.create(servicio=servicio, fecha_agendamiento=fecha_agendamiento)
 
+            # Verificar disponibilidad del servicio
+            if not verificar_disponibilidad(servicio, fecha_agendamiento, fecha_agendamiento + servicio.duracion):
+                raise ValidationError(f"El servicio {servicio.nombre} no está disponible en el horario solicitado.")
+
+            # Agregar el servicio a la reserva
+            venta_reserva.agregar_servicio(servicio, fecha_agendamiento)
+
+        # Guardar la reserva y calcular el total
         venta_reserva.calcular_total()
         venta_reserva.save()
 
+        # Serializar la respuesta con los datos actualizados
         serializer = self.get_serializer(venta_reserva)
         return Response(serializer.data)
 
-    def perform_update(self, serializer):
-        instance = serializer.save()
-        instance.calcular_total()
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data = request.data
 
+        # Procesar los productos actualizados
+        productos = data.get('productos', [])
+        for producto_data in productos:
+            producto_id = producto_data.get('producto')
+            cantidad = producto_data.get('cantidad')
+            producto = Producto.objects.get(id=producto_id)
 
+            # Verificar si hay inventario suficiente antes de agregar
+            if producto.cantidad_disponible < cantidad:
+                raise ValidationError(f"No hay suficiente inventario para el producto {producto.nombre}.")
+            
+            instance.agregar_producto(producto, cantidad)
+
+        # Procesar los servicios actualizados
+        servicios = data.get('servicios', [])
+        for servicio_data in servicios:
+            servicio_id = servicio_data.get('servicio')
+            fecha_agendamiento = servicio_data.get('fecha_agendamiento')
+            servicio = Servicio.objects.get(id=servicio_id)
+
+            # Verificar disponibilidad del servicio
+            if not verificar_disponibilidad(servicio, fecha_agendamiento, fecha_agendamiento + servicio.duracion):
+                raise ValidationError(f"El servicio {servicio.nombre} no está disponible en el horario solicitado.")
+
+            instance.agregar_servicio(servicio, fecha_agendamiento)
+
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 class PagoViewSet(viewsets.ModelViewSet):
     queryset = Pago.objects.all()
     serializer_class = PagoSerializer

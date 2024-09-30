@@ -119,7 +119,12 @@ class VentaReserva(models.Model):
         self.productos.add(producto, through_defaults={'cantidad': cantidad})
         producto.reducir_inventario(cantidad)
         self.calcular_total()
+        self.actualizar_saldo()
 
+    def agregar_servicio(self, servicio, fecha_agendamiento):
+        self.servicios.add(servicio, through_defaults={'fecha_agendamiento': fecha_agendamiento})
+        self.calcular_total()
+        self.actualizar_saldo()
 class Pago(models.Model):
     METODOS_PAGO = [
         ('tarjeta', 'Tarjeta de Crédito/Débito'),
