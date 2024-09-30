@@ -9,16 +9,16 @@ class ReservaProductoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Ensure that product is selected before accessing its attributes
-        if self.instance and self.instance.producto:
+
+        # Only access the product after it's been assigned
+        if self.instance and hasattr(self.instance, 'producto') and self.instance.producto:
             producto = self.instance.producto
             if not producto.es_reservable:
-                self.fields['fecha_agendamiento'].widget = forms.HiddenInput()  # Hide field if product is not reservable
+                self.fields['fecha_agendamiento'].widget = forms.HiddenInput()  # Hide the field if product is not reservable
             else:
                 self.fields['fecha_agendamiento'].required = True  # Require the field for reservable products
         else:
-            # Hide the field by default if no product is selected yet
+            # Hide the field if no product is selected yet
             self.fields['fecha_agendamiento'].widget = forms.HiddenInput()
 
 class ReservaProductoInline(admin.TabularInline):
