@@ -21,13 +21,12 @@ class ReservaServicioInlineForm(forms.ModelForm):
         # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Si la instancia tiene un servicio asignado
+        # Si ya existe un servicio (en edición o en datos enviados)
         if self.instance.pk and getattr(self.instance, 'servicio', None):
             servicio = self.instance.servicio
-            if servicio and servicio.categoria:
+            if servicio.categoria:
                 self.cargar_horarios(servicio.categoria)
-        # Si se selecciona un servicio desde el formulario
-        elif 'servicio' in self.data:
+        elif 'servicio' in self.data:  # Si el servicio se ha enviado en el formulario
             try:
                 servicio_id = int(self.data.get('servicio'))
                 servicio = Servicio.objects.get(id=servicio_id)
