@@ -19,33 +19,10 @@ class ReservaServicioInlineForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
-        # Inicializamos el campo 'hora' con una opción de selección por defecto
+        # Inicializar el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
-
-        # Si ya existe un servicio (en edición o en datos enviados)
-        if self.instance.pk and getattr(self.instance, 'servicio', None):
-            servicio = self.instance.servicio
-            if servicio and servicio.categoria:
-                self.cargar_horarios(servicio.categoria)
-        elif 'servicio' in self.data:  # Si el servicio se ha enviado en el formulario
-            try:
-                servicio_id = int(self.data.get('servicio'))
-                servicio = Servicio.objects.get(id=servicio_id)
-                self.cargar_horarios(servicio.categoria)
-            except (ValueError, Servicio.DoesNotExist):
-                pass
-
-    def cargar_horarios(self, categoria):
-        """
-        Carga los horarios disponibles según la categoría del servicio.
-        Maneja el caso en que la categoría no tenga horarios definidos.
-        """
-        if categoria.horarios and categoria.horarios.strip():  # Verifica si hay horarios y que no esté vacío
-            horarios = [(hora.strip(), hora.strip()) for hora in categoria.horarios.split(',')]
-            self.fields['hora'].choices = horarios
-        else:
-            # Mostrar mensaje si no hay horarios disponibles
-            self.fields['hora'].choices = [('', 'No hay horarios disponibles')]
+        
+        # No cargamos horarios aquí, lo haremos con JS
 
     def clean(self):
         """
@@ -56,17 +33,21 @@ class ReservaServicioInlineForm(forms.ModelForm):
         hora = cleaned_data.get('hora')
 
         if fecha and hora:
-            # Combinar la fecha y la hora en un solo campo
+            # Combinar la fecha y la hora en un solo campo `fecha_agendamiento`
             fecha_hora_str = f"{fecha} {hora}"
-            cleaned_data['fecha_agendamiento'] = fecha_hora_str
+            fecha_agendamiento = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
+            cleaned_data['fecha_agendamiento'] = make_aware(fecha_agendamiento)
 
         return cleaned_data
-
     
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
     form = ReservaServicioInlineForm
     extra = 1
+
+    class Media:
+        js = ('js/horarios.js',)  # Asegúrate de que el archivo JS esté en tu directorio estático
+
 
 class ReservaProductoInline(admin.TabularInline):
     model = ReservaProducto
