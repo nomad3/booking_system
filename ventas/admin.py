@@ -22,10 +22,13 @@ class ReservaServicioInlineForm(forms.ModelForm):
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
         # Verificar si self.instance tiene un servicio antes de acceder a él
-        if self.instance and hasattr(self.instance, 'servicio') and self.instance.servicio:
-            servicio = self.instance.servicio
-            if servicio and servicio.categoria:
-                self.cargar_horarios(servicio.categoria)
+        if self.instance and self.instance.pk:  # Solo si la instancia ya está guardada
+            try:
+                servicio = self.instance.servicio
+                if servicio and servicio.categoria:
+                    self.cargar_horarios(servicio.categoria)
+            except ReservaServicio.servicio.RelatedObjectDoesNotExist:
+                pass  # Manejar el caso en que no hay servicio asociado aún
 
     def cargar_horarios(self, categoria):
         """
@@ -51,6 +54,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
             cleaned_data['fecha_agendamiento'] = make_aware(fecha_agendamiento)
 
         return cleaned_data
+
     
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
