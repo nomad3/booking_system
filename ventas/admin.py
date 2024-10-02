@@ -14,19 +14,21 @@ class ReservaServicioInlineForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
-        self.fields['fecha_agendamiento'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local'})
+
+        # Cambiar el widget a uno compatible con DateTime de HTML5
+        self.fields['fecha_agendamiento'].widget = DateTimeInput(attrs={'type': 'datetime-local'})
 
     def clean_fecha_agendamiento(self):
         fecha_agendamiento = self.cleaned_data.get('fecha_agendamiento')
 
-        # Si es un string, convertimos a datetime
-        if isinstance(fecha_agendamiento, str):
+        if fecha_agendamiento and isinstance(fecha_agendamiento, str):
             try:
+                # Asegurar la conversión adecuada de cadena a datetime
                 fecha_agendamiento = datetime.strptime(fecha_agendamiento, '%Y-%m-%dT%H:%M')
-                fecha_agendamiento = make_aware(fecha_agendamiento)  # Asegurar que sea "timezone-aware"
+                fecha_agendamiento = make_aware(fecha_agendamiento)
             except ValueError:
-                raise forms.ValidationError("El formato de la fecha y hora no es válido.")
-        
+                raise forms.ValidationError("Formato incorrecto de la fecha y hora.")
+
         return fecha_agendamiento
     
 class ReservaServicioInline(admin.TabularInline):
