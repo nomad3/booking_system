@@ -18,7 +18,6 @@ class ReservaServicioInlineForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
-        # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
     def clean(self):
