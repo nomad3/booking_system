@@ -10,19 +10,24 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']  # Volvemos a incluir 'fecha_agendamiento'
+        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']
 
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
-
-        # No necesitamos manipular 'fecha_agendamiento' ni 'hora', Django manejará la selección de la fecha/hora
         self.fields['fecha_agendamiento'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local'})
 
-    def clean(self):
-        cleaned_data = super().clean()
-        # No hay necesidad de combinar fecha y hora, ya que usamos 'fecha_agendamiento' directamente
-        return cleaned_data
+    def clean_fecha_agendamiento(self):
+        fecha_agendamiento = self.cleaned_data.get('fecha_agendamiento')
 
+        # Si es un string, convertimos a datetime
+        if isinstance(fecha_agendamiento, str):
+            try:
+                fecha_agendamiento = datetime.strptime(fecha_agendamiento, '%Y-%m-%dT%H:%M')
+                fecha_agendamiento = make_aware(fecha_agendamiento)  # Asegurar que sea "timezone-aware"
+            except ValueError:
+                raise forms.ValidationError("El formato de la fecha y hora no es válido.")
+        
+        return fecha_agendamiento
     
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
