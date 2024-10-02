@@ -10,22 +10,30 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas']
+        fields = ['servicio', 'cantidad_personas']  # Excluimos 'fecha_agendamiento'
 
     # Campos separados para fecha y hora
-    fecha = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
+    fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
     hora = forms.ChoiceField(required=True, label='Hora', choices=[('', 'Seleccione un horario')])
 
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
-        # Inicializar el campo 'hora' con una opción de selección por defecto
+        # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        if self.instance and self.instance.pk:
+        # Si ya existe un servicio (en edición o en datos enviados)
+        if self.instance.pk and getattr(self.instance, 'servicio', None):
             servicio = self.instance.servicio
             if servicio and servicio.categoria:
                 self.cargar_horarios(servicio.categoria)
+        elif 'servicio' in self.data:  # Si el servicio se ha enviado en el formulario
+            try:
+                servicio_id = int(self.data.get('servicio'))
+                servicio = Servicio.objects.get(id=servicio_id)
+                self.cargar_horarios(servicio.categoria)
+            except (ValueError, Servicio.DoesNotExist):
+                pass
 
     def cargar_horarios(self, categoria):
         """
@@ -48,11 +56,12 @@ class ReservaServicioInlineForm(forms.ModelForm):
         hora = cleaned_data.get('hora')
 
         if fecha and hora:
-            # Combinar fecha y hora en un solo campo `fecha_agendamiento`
+            # Combinar la fecha y la hora en un solo campo
             fecha_hora_str = f"{fecha} {hora}"
             cleaned_data['fecha_agendamiento'] = fecha_hora_str
 
         return cleaned_data
+
     
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
