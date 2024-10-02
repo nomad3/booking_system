@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django import forms
+from datetime import datetime
 from django.utils.timezone import make_aware
 from django.forms import DateInput, TimeInput, Select
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio
@@ -8,11 +9,11 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']  # Incluimos 'fecha_agendamiento'
+        fields = ['servicio', 'cantidad_personas']  # Excluimos 'fecha_agendamiento'
 
     # Campos separados para fecha y hora
-    fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True)
-    hora = forms.ChoiceField(required=False)  # Inicialmente vacío
+    fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
+    hora = forms.ChoiceField(required=True, label='Hora')  # Inicialmente vacío
 
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
@@ -20,12 +21,12 @@ class ReservaServicioInlineForm(forms.ModelForm):
         # Inicializar el campo de hora vacío si no hay servicio seleccionado
         self.fields['hora'].choices = []  # Dejar vacío hasta que se seleccione un servicio
 
-        if self.instance and self.instance.pk:  # Si se está editando una reserva existente
+        # Obtener el servicio y asignar las horas según la categoría del servicio
+        if self.instance and self.instance.pk:
             servicio = self.instance.servicio
         else:
-            servicio = None  # Para nuevas reservas, asumimos que el servicio aún no ha sido seleccionado
+            servicio = None
 
-        # Si ya hay un servicio seleccionado, asignar los horarios correspondientes
         if servicio and servicio.categoria:
             self.asignar_horarios(servicio.categoria.nombre)
 
