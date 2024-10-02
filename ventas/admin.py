@@ -11,12 +11,23 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']  # Incluimos 'fecha_agendamiento'
+        fields = ['servicio', 'fecha_agendamiento', 'cantidad_personas']
 
-    def __init__(self, *args, **kwargs):
-        super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
-        # Usar un widget que permita seleccionar fecha y hora
-        self.fields['fecha_agendamiento'].widget = DateTimeInput(attrs={'type': 'datetime-local'})
+    def clean_fecha_agendamiento(self):
+        """
+        Convertir el campo `fecha_agendamiento` en un objeto datetime si es necesario.
+        """
+        fecha_agendamiento = self.cleaned_data.get('fecha_agendamiento')
+
+        # Verificar si fecha_agendamiento es un string y convertirlo a datetime
+        if isinstance(fecha_agendamiento, str):
+            try:
+                fecha_agendamiento = datetime.strptime(fecha_agendamiento, '%Y-%m-%d %H:%M')
+                fecha_agendamiento = timezone.make_aware(fecha_agendamiento)  # Asegurarnos de que sea "aware"
+            except ValueError:
+                raise forms.ValidationError("El formato de la fecha de agendamiento no es válido. Debe ser YYYY-MM-DD HH:MM.")
+
+        return fecha_agendamiento
     
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
