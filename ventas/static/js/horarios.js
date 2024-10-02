@@ -1,4 +1,16 @@
 document.addEventListener('DOMContentLoaded', function () {
+    function obtenerCategoria(servicioId) {
+        // Esta función debe devolver la categoría basada en el servicioId
+        const categoriasPorServicio = {
+            1: 'Cabañas',  // Servicio 1 es Cabañas
+            2: 'Tinas',    // Servicio 2 es Tinas
+            3: 'Masajes'   // Servicio 3 es Masajes
+            // Agrega más servicios y categorías aquí
+        };
+
+        return categoriasPorServicio[servicioId] || null;  // Devuelve la categoría o null si no existe
+    }
+
     function actualizarHorarios(servicioField) {
         const servicioId = servicioField.value;
         const row = servicioField.closest('tr');  // Seleccionamos la fila en la que está el servicio
@@ -8,15 +20,16 @@ document.addEventListener('DOMContentLoaded', function () {
         horaField.innerHTML = '<option value="">Seleccione un horario</option>';
 
         if (servicioId) {
-            // Aquí se deben definir los horarios por categoría de servicio
+            const categoria = obtenerCategoria(servicioId);
+
+            // Definir los horarios para cada categoría
             const horariosPorCategoria = {
-                1: ['16:00', '17:00'], // Ejemplo para ID de servicio 1 (Cabañas)
-                2: ['14:00', '14:30', '17:00', '19:00', '21:30'], // Ejemplo para ID de servicio 2 (Tinas)
-                3: ['13:00', '14:15', '15:30', '18:00', '20:30'], // Ejemplo para ID de servicio 3 (Masajes)
+                'Cabañas': ['16:00'],
+                'Tinas': ['14:00', '14:30', '17:00', '19:00', '19:30', '21:30', '22:00'],
+                'Masajes': ['13:00', '14:15', '15:30', '16:45', '18:00', '19:15', '20:30']
             };
 
-            // Obtén la categoría de horarios para este servicio
-            const horarios = horariosPorCategoria[servicioId];
+            const horarios = horariosPorCategoria[categoria];  // Obtener horarios basados en la categoría
 
             if (horarios) {
                 // Cargar los horarios en el campo de hora
