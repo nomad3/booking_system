@@ -24,22 +24,29 @@ from .serializers import (
 )
 
 def servicios_vendidos_view(request):
-    # Obtener los parámetros de fecha desde la URL
+    # Obtener los parámetros del filtro
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
+    categoria_id = request.GET.get('categoria')
 
-    # Convertir fechas a objetos datetime (manejo de caso de que no haya fecha fin)
+    # Consultar todos los servicios vendidos
     servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
 
+    # Filtrar por rango de fechas si está presente
     if fecha_inicio:
         fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-        if fecha_fin:
-            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
-            # Filtrar por rango de fechas si ambas fechas están presentes
-            servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__range=[fecha_inicio, fecha_fin])
-        else:
-            # Si solo se proporciona la fecha de inicio, filtrar por esa fecha o posterior
-            servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio)
+        servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio)
+    
+    if fecha_fin:
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__lte=fecha_fin)
+
+    # Filtrar por categoría de servicio si está presente
+    if categoria_id:
+        servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
+
+    # Obtener todas las categorías de servicio para el filtro
+    categorias = CategoriaServicio.objects.all()
 
     # Preparar los datos para la tabla
     data = []
@@ -50,15 +57,21 @@ def servicios_vendidos_view(request):
             'cliente_nombre': servicio.venta_reserva.cliente.nombre,  # Nombre del cliente
             'categoria_servicio': servicio.servicio.categoria.nombre,  # Categoría del servicio
             'servicio_nombre': servicio.servicio.nombre,  # Nombre del servicio
-            'fecha_agendamiento': servicio.fecha_agendamiento.date(),  # Solo la fecha
-            'hora_agendamiento': servicio.fecha_agendamiento.time(),  # Solo la hora
+            'fecha_agendamiento': servicio.fecha_agendamiento.date(),  # Fecha
+            'hora_agendamiento': servicio.fecha_agendamiento.time(),  # Hora
             'monto': servicio.servicio.precio_base,  # Monto por persona
             'cantidad_personas': servicio.cantidad_personas,  # Cantidad de pasajeros
             'total_monto': total_monto  # Monto total (monto * cantidad_personas)
         })
 
-    # Pasar los datos a la plantilla
-    return render(request, 'ventas/servicios_vendidos.html', {'servicios': data, 'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin})
+    # Pasar los datos y las categorías a la plantilla
+    return render(request, 'ventas/servicios_vendidos.html', {
+        'servicios': data,
+        'categorias': categorias,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'categoria_id': categoria_id
+    })
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()

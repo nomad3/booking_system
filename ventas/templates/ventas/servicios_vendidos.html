@@ -4,15 +4,26 @@
   <div class="module">
     <h1>Servicios Vendidos</h1>
     
-    <!-- Formulario de filtro por fechas -->
+    <!-- Formulario de filtro por fechas y categoría -->
     <form method="GET" action="">
       <div class="field-box">
         <label for="fecha_inicio">Fecha Inicio:</label>
-        <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio|date:'Y-m-d' }}" class="vDateField">
+        <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio }}" class="vDateField">
       </div>
       <div class="field-box">
         <label for="fecha_fin">Fecha Fin:</label>
-        <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin|date:'Y-m-d' }}" class="vDateField">
+        <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin }}" class="vDateField">
+      </div>
+      <div class="field-box">
+        <label for="categoria">Categoría de Servicio:</label>
+        <select id="categoria" name="categoria">
+          <option value="">Todas las Categorías</option>
+          {% for categoria in categorias %}
+            <option value="{{ categoria.id }}" {% if categoria.id|stringformat:"s" == categoria_id|stringformat:"s" %}selected{% endif %}>
+              {{ categoria.nombre }}
+            </option>
+          {% endfor %}
+        </select>
       </div>
       <button type="submit" class="btn btn-primary">Filtrar</button>
     </form>
@@ -25,8 +36,8 @@
                 <th>Nombre Cliente</th>
                 <th>Categoría Servicio</th>
                 <th>Servicio</th>
-                <th>Fecha del Servicio</th>
-                <th>Hora del Servicio</th>
+                <th>Fecha</th>
+                <th>Hora</th>
                 <th>Monto por Persona</th>
                 <th>Cantidad de Pasajeros</th>
                 <th>Monto Total</th>
@@ -39,7 +50,7 @@
                 <td>{{ servicio.cliente_nombre }}</td>
                 <td>{{ servicio.categoria_servicio }}</td>
                 <td>{{ servicio.servicio_nombre }}</td>
-                <td>{{ servicio.fecha_agendamiento|date:"Y-m-d" }}</td>
+                <td>{{ servicio.fecha_agendamiento }}</td>
                 <td>{{ servicio.hora_agendamiento }}</td>
                 <td>{{ servicio.monto }}</td>
                 <td>{{ servicio.cantidad_personas }}</td>
@@ -47,7 +58,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="9">No hay servicios vendidos en este rango de fechas.</td>
+                <td colspan="9">No hay servicios vendidos en este rango de fechas o categoría.</td>
             </tr>
             {% endfor %}
         </tbody>
