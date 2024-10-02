@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Seleccionar todos los campos 'servicio' del formulario inline
+    // Escuchar cambios en todos los campos 'servicio' del formulario inline
     document.querySelectorAll('select[name$="-servicio"]').forEach(function(servicioSelect) {
         servicioSelect.addEventListener('change', function() {
             const selectedOption = servicioSelect.options[servicioSelect.selectedIndex];
