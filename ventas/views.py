@@ -36,7 +36,7 @@ def servicios_vendidos_view(request):
     if fecha_inicio:
         fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
         servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio)
-    
+
     if fecha_fin:
         fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
         servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__lte=fecha_fin)
@@ -53,7 +53,7 @@ def servicios_vendidos_view(request):
     for servicio in servicios_vendidos:
         total_monto = servicio.servicio.precio_base * servicio.cantidad_personas
         fecha_agendamiento = timezone.localtime(servicio.fecha_agendamiento)  # Convertir a hora local si es necesario
-        
+
         data.append({
             'venta_reserva_id': servicio.venta_reserva.id,  # Número de venta/reserva
             'cliente_nombre': servicio.venta_reserva.cliente.nombre,  # Nombre del cliente
@@ -65,7 +65,8 @@ def servicios_vendidos_view(request):
             'cantidad_personas': servicio.cantidad_personas,  # Cantidad de pasajeros
             'total_monto': total_monto  # Monto total (monto * cantidad_personas)
         })
-        # Pasar los datos y las categorías a la plantilla
+
+    # Pasar los datos y las categorías a la plantilla
     return render(request, 'ventas/servicios_vendidos.html', {
         'servicios': data,
         'categorias': categorias,
@@ -73,9 +74,6 @@ def servicios_vendidos_view(request):
         'fecha_fin': fecha_fin,
         'categoria_id': categoria_id
     })
-
-    # Pasar los datos a la plantilla
-    return render(request, 'ventas/servicios_vendidos.html', {'servicios': data})
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()
