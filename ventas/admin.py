@@ -16,15 +16,15 @@ class ReservaServicioInlineForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
-        # Asignar el widget de selección de fecha
+        # Configurar el campo de fecha, pero no duplicarlo
         self.fields['fecha_agendamiento'].widget = DateInput(format='%Y-%m-%d', attrs={
             'class': 'form-control',
             'type': 'date',
         })
 
         # Definir las opciones de hora según el tipo de servicio
-        if self.instance and self.instance.pk:
-            servicio = self.instance.servicio
+        if self.instance and self.instance.pk:  # Solo si la instancia ya existe
+            servicio = self.instance.servicio  # Obtener el servicio si está definido
             if servicio:
                 if servicio.categoria.nombre == 'Cabañas':
                     self.fields['hora'].choices = [('16:00', '16:00')]
@@ -48,12 +48,9 @@ class ReservaServicioInlineForm(forms.ModelForm):
                         ('19:15', '19:15'),
                         ('20:30', '20:30'),
                     ]
-
-        # Establecer el widget de horas como un selector predefinido
-        if 'hora' in self.fields:
-            self.fields['hora'].widget = Select(attrs={
-                'class': 'form-control',
-            })
+            else:
+                # Si no hay servicio definido, vaciar el campo de hora
+                self.fields['hora'].choices = []
 
     def clean(self):
         cleaned_data = super().clean()
@@ -69,7 +66,6 @@ class ReservaServicioInlineForm(forms.ModelForm):
             cleaned_data['fecha_agendamiento'] = make_aware(fecha_agendamiento)
 
         return cleaned_data
-
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
     form = ReservaServicioInlineForm  # Usar el formulario personalizado
