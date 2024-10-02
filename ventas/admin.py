@@ -11,15 +11,19 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']  # Aseguramos que 'fecha_agendamiento' esté incluido
+        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']
 
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
-        # Usamos el widget DateTimeInput para permitir seleccionar fecha y hora
+        # Usar el widget adecuado para seleccionar fecha y hora
         self.fields['fecha_agendamiento'].widget = DateTimeInput(attrs={'type': 'datetime-local'})
 
     def clean_fecha_agendamiento(self):
         fecha_agendamiento = self.cleaned_data.get('fecha_agendamiento')
+
+        # Verificar que no se esté tratando como lista
+        if isinstance(fecha_agendamiento, list):
+            raise forms.ValidationError("Fecha y hora no pueden ser una lista. Ingrese un valor válido.")
 
         if fecha_agendamiento and isinstance(fecha_agendamiento, str):
             try:
