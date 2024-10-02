@@ -45,6 +45,9 @@ def servicios_vendidos_view(request):
     if categoria_id:
         servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
 
+    # Ordenar primero por fecha en orden decreciente y luego por hora en orden creciente
+    servicios_vendidos = servicios_vendidos.order_by('-fecha_agendamiento__date', 'fecha_agendamiento__time')
+
     # Obtener todas las categorías de servicio para el filtro
     categorias = CategoriaServicio.objects.all()
 
