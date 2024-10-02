@@ -9,9 +9,9 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas']  # Solo incluimos los campos relevantes
+        fields = ['servicio', 'cantidad_personas']  # Excluimos 'fecha_agendamiento'
 
-    # Campos separados para fecha y hora
+    # Campo separado para fecha y hora
     fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
     hora = forms.ChoiceField(required=True, label='Hora', choices=[('', 'Seleccione un horario')])
 
@@ -21,13 +21,12 @@ class ReservaServicioInlineForm(forms.ModelForm):
         # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Si ya existe un servicio, cargar los horarios
-        if self.instance and self.instance.servicio:
+        # Si la instancia tiene un servicio asignado
+        if self.instance.pk and getattr(self.instance, 'servicio', None):
             servicio = self.instance.servicio
-            if servicio.categoria:
+            if servicio and servicio.categoria:
                 self.cargar_horarios(servicio.categoria)
-        
-        # Si se ha seleccionado un servicio en el formulario, cargar los horarios según la categoría
+        # Si se selecciona un servicio desde el formulario
         elif 'servicio' in self.data:
             try:
                 servicio_id = int(self.data.get('servicio'))
@@ -38,7 +37,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
 
     def cargar_horarios(self, categoria):
         """
-        Carga los horarios disponibles según la categoría del servicio.
+        Carga los horarios disponibles desde la categoría del servicio.
         """
         if categoria.horarios:  # Si la categoría tiene horarios definidos
             horarios = [(hora.strip(), hora.strip()) for hora in categoria.horarios.split(',')]
@@ -55,7 +54,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
         hora = cleaned_data.get('hora')
 
         if fecha and hora:
-            # Combinar fecha y hora en un solo campo
+            # Combinar la fecha y la hora en un solo campo
             fecha_hora_str = f"{fecha} {hora}"
             fecha_agendamiento = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
 
