@@ -143,6 +143,8 @@ class Pago(models.Model):
         ('efectivo', 'Efectivo'),
         ('transferencia', 'Transferencia Bancaria'),
         ('webpay', 'WebPay'),
+        ('descuento', 'Descuento'),
+        ('giftcard', 'GiftCard'),
     ]
 
     venta_reserva = models.ForeignKey(VentaReserva, related_name='pagos', on_delete=models.CASCADE)
