@@ -61,10 +61,6 @@ class ReservaServicioInline(admin.TabularInline):
     form = ReservaServicioInlineForm
     extra = 1
 
-    class Media:
-        # Aquí agregamos el archivo JS que manejará la lógica dinámica de horarios
-        js = ('js/dynamic_horarios.js',)  # Asegúrate de tener este archivo en tu directorio de estáticos
-
 class ReservaProductoInline(admin.TabularInline):
     model = ReservaProducto
     extra = 1
