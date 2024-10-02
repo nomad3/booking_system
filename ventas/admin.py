@@ -21,20 +21,17 @@ class ReservaServicioInlineForm(forms.ModelForm):
         # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Verificar si self.instance tiene un servicio antes de acceder a él
-        if self.instance and self.instance.pk:  # Solo si la instancia ya está guardada
-            try:
-                servicio = self.instance.servicio
-                if servicio and servicio.categoria:
-                    self.cargar_horarios(servicio.categoria)
-            except ReservaServicio.servicio.RelatedObjectDoesNotExist:
-                pass  # Manejar el caso en que no hay servicio asociado aún
+        # Si la instancia tiene un servicio seleccionado, cargar los horarios de la categoría
+        if self.instance and self.instance.servicio:
+            servicio = self.instance.servicio
+            if servicio.categoria:
+                self.cargar_horarios(servicio.categoria)
 
     def cargar_horarios(self, categoria):
         """
-        Carga los horarios desde la categoría del servicio.
+        Carga los horarios desde la categoría del servicio, separados por comas.
         """
-        if categoria.horarios:
+        if categoria.horarios:  # Verificar si la categoría tiene horarios definidos
             horarios = [(hora.strip(), hora.strip()) for hora in categoria.horarios.split(',')]
             self.fields['hora'].choices = horarios
         else:
@@ -54,7 +51,6 @@ class ReservaServicioInlineForm(forms.ModelForm):
             cleaned_data['fecha_agendamiento'] = make_aware(fecha_agendamiento)
 
         return cleaned_data
-
     
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
