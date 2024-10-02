@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Servicios Vendidos</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Servicios Vendidos</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th># Venta Reserva</th>
+            <th>Nombre Cliente</th>
+            <th>Categoría Servicio</th>
+            <th>Monto por Persona</th>
+            <th>Cantidad de Pasajeros</th>
+            <th>Monto Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for servicio in servicios %}
+        <tr>
+            <td>{{ servicio.venta_reserva_id }}</td>
+            <td>{{ servicio.cliente_nombre }}</td>
+            <td>{{ servicio.categoria_servicio }}</td>
+            <td>{{ servicio.monto }}</td>
+            <td>{{ servicio.cantidad_personas }}</td>
+            <td>{{ servicio.total_monto }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>

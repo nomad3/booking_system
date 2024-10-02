@@ -1,6 +1,7 @@
 
 from rest_framework import viewsets
 from rest_framework.response import Response
+from django.shortcuts import render
 from django.utils import timezone
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio
 from .utils import verificar_disponibilidad
@@ -20,6 +21,25 @@ from .serializers import (
     VentaReservaSerializer
 )
 
+def servicios_vendidos_view(request):
+    # Consultar todos los servicios vendidos
+    servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
+
+    # Preparar los datos para la tabla
+    data = []
+    for servicio in servicios_vendidos:
+        total_monto = servicio.servicio.precio_base * servicio.cantidad_personas
+        data.append({
+            'venta_reserva_id': servicio.venta_reserva.id,  # Número de venta/reserva
+            'cliente_nombre': servicio.venta_reserva.cliente.nombre,  # Nombre del cliente
+            'categoria_servicio': servicio.servicio.categoria.nombre,  # Categoría del servicio
+            'monto': servicio.servicio.precio_base,  # Monto por persona
+            'cantidad_personas': servicio.cantidad_personas,  # Cantidad de pasajeros
+            'total_monto': total_monto  # Monto total (monto * cantidad_personas)
+        })
+
+    # Pasar los datos a la plantilla
+    return render(request, 'ventas/servicios_vendidos.html', {'servicios': data})
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()

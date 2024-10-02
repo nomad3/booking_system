@@ -9,16 +9,18 @@ class ReservaServicioInlineForm(forms.ModelForm):
         model = ReservaServicio
         fields = '__all__'
 
-    # Dividimos la fecha y la hora
+    # Dividimos la fecha y la hora en campos separados solo en el formulario
     fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True)
     hora = forms.ChoiceField(required=True)
 
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
-        # Eliminar el widget repetido de fecha_agendamiento
-        if 'fecha_agendamiento' in self.fields:
-            del self.fields['fecha_agendamiento']
+        # Asignar el widget de selección de fecha
+        self.fields['fecha_agendamiento'].widget = DateInput(format='%Y-%m-%d', attrs={
+            'class': 'form-control',
+            'type': 'date',
+        })
 
         # Definir las opciones de hora según el tipo de servicio
         if self.instance and self.instance.pk:
