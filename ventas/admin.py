@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django import forms
-from django.forms import DateInput, TimeInput
+from django.forms import DateInput, TimeInput, Select
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio
 
 # Formulario personalizado para elegir los slots de horas según el servicio
@@ -23,7 +23,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
         })
 
         # Definir las opciones de hora según el tipo de servicio
-        if self.instance and self.instance.pk:  # Solo si la instancia ya existe
+        if self.instance and self.instance.pk:
             servicio = self.instance.servicio
             if servicio:
                 if servicio.categoria.nombre == 'Cabañas':
@@ -51,7 +51,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
 
         # Establecer el widget de horas como un selector predefinido
         if 'hora' in self.fields:
-            self.fields['hora'].widget = Select(attrs={
+            self.fields['hora'].widget = Select(attrs={  # Aquí se usa el widget 'Select'
                 'class': 'form-control',
             })
 
