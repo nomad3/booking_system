@@ -59,6 +59,7 @@ class PagoSerializer(serializers.ModelSerializer):
         ('tarjeta', 'Tarjeta de Crédito/Débito'),
         ('efectivo', 'Efectivo'),
         ('transferencia', 'Transferencia Bancaria'),
+        ('webpay', 'WebPay'),
     ]
 
     metodo_pago = serializers.ChoiceField(choices=METODOS_PAGO)
