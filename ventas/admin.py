@@ -9,9 +9,9 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']
+        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']  # Incluimos solo los campos necesarios
 
-    # Campos separados para fecha y hora
+    # Campos separados para fecha y hora, pero no duplicamos la fecha
     fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
     hora = forms.ChoiceField(required=True, label='Hora', choices=[('', 'Seleccione un horario')])
 
@@ -21,14 +21,13 @@ class ReservaServicioInlineForm(forms.ModelForm):
         # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Verificar si la instancia ya tiene un servicio definido
-        if self.instance and self.instance.pk and hasattr(self.instance, 'servicio') and self.instance.servicio:
+        # Verificamos si hay un servicio seleccionado o si estamos cargando un formulario nuevo
+        if self.instance and self.instance.pk and getattr(self.instance, 'servicio', None):
             servicio = self.instance.servicio
-            if servicio.categoria:
+            if servicio and servicio.categoria:
                 self.cargar_horarios(servicio.categoria)
-
-        # Para nuevas reservas, cargar horarios si se pasa un servicio en los datos del formulario
         elif 'servicio' in self.data:
+            # Si el formulario fue enviado pero no está asignado en la instancia
             try:
                 servicio_id = int(self.data.get('servicio'))
                 servicio = Servicio.objects.get(id=servicio_id)
