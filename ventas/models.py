@@ -89,8 +89,8 @@ class VentaReserva(models.Model):
         # Sumar los productos
         for reserva_producto in self.reservaprodutos.all():
             total += reserva_producto.producto.precio_base * reserva_producto.cantidad
-        
-        # Sumar los servicios multiplicando por la cantidad de personas
+
+        # Sumar los servicios, multiplicando por la cantidad de personas
         for reserva_servicio in self.reservaservicios.all():
             total += reserva_servicio.servicio.precio_base * reserva_servicio.cantidad_personas
 
@@ -119,6 +119,7 @@ class VentaReserva(models.Model):
         return nuevo_pago
 
     def agregar_producto(self, producto, cantidad):
+        # Asegurar la reducción de inventario
         self.productos.add(producto, through_defaults={'cantidad': cantidad})
         producto.reducir_inventario(cantidad)
         self.calcular_total()
@@ -128,6 +129,7 @@ class VentaReserva(models.Model):
         """
         Agrega un servicio a la reserva, especificando la fecha de agendamiento y la cantidad de personas.
         """
+        # Añadimos el servicio usando el modelo intermedio ReservaServicio
         self.servicios.add(servicio, through_defaults={
             'fecha_agendamiento': fecha_agendamiento,
             'cantidad_personas': cantidad_personas  # Registrar la cantidad de personas
@@ -176,11 +178,11 @@ class ReservaProducto(models.Model):
 class ReservaServicio(models.Model):
     venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaservicios')
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
-    fecha_agendamiento = models.DateTimeField(default=timezone.now)
-    cantidad_personas = models.PositiveIntegerField(default=1)  # Nuevo campo para la cantidad de personas
+    fecha_agendamiento = models.DateTimeField(null=True, blank=True)  # Permitir que el usuario lo seleccione
+    cantidad_personas = models.PositiveIntegerField(default=1)
 
     def __str__(self):
         return f"{self.servicio.nombre} reservado para {self.fecha_agendamiento}"
 
     def calcular_precio(self):
-        return self.servicio.precio_base * self.cantidad_personas  # Multiplicar el precio por la cantidad de personas
+        return self.servicio.precio_base * self.cantidad_personas
