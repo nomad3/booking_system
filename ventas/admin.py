@@ -13,29 +13,34 @@ class ReservaServicioInlineForm(forms.ModelForm):
 
     # Campos separados para fecha y hora
     fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
-    hora = forms.ChoiceField(required=True, label='Hora')  # Inicialmente vacío
+    hora = forms.ChoiceField(required=True, label='Hora', choices=[('', 'Seleccione un horario')])
 
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
-        # Inicializar el campo de hora vacío si no hay servicio seleccionado
-        self.fields['hora'].choices = []  # Dejar vacío hasta que se seleccione un servicio
+        # Inicializamos la lista de opciones de hora vacía con un mensaje de selección
+        self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Obtener el servicio y asignar las horas según la categoría del servicio
+        # Si ya hay un servicio seleccionado (edición), mostrar los slots de hora según la categoría
         if self.instance and self.instance.pk:
             servicio = self.instance.servicio
-        else:
-            servicio = None
+            if servicio:
+                self.asignar_horarios(servicio.categoria.nombre)
 
-        if servicio and servicio.categoria:
-            self.asignar_horarios(servicio.categoria.nombre)
+        # Para nuevas reservas, si se pasa un servicio a través de `initial`
+        elif 'servicio' in self.initial and self.initial['servicio']:
+            servicio = self.initial['servicio']
+            if servicio.categoria:
+                self.asignar_horarios(servicio.categoria.nombre)
 
     def asignar_horarios(self, categoria_nombre):
         """
         Asigna los slots de horarios según la categoría del servicio.
         """
         if categoria_nombre == 'Cabañas':
-            self.fields['hora'].choices = [('16:00', '16:00')]
+            self.fields['hora'].choices = [
+                ('16:00', '16:00'),
+            ]
         elif categoria_nombre == 'Tinas':
             self.fields['hora'].choices = [
                 ('14:00', '14:00'),
