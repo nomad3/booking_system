@@ -21,12 +21,13 @@ class ReservaServicioInlineForm(forms.ModelForm):
         # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Si ya hay un servicio seleccionado, cargar los horarios de la categoría
-        if self.instance and self.instance.servicio:
+        # Solo cargamos horarios si hay una instancia con servicio ya asignado
+        if self.instance and getattr(self.instance, 'servicio', None):
             servicio = self.instance.servicio
             if servicio.categoria:
                 self.cargar_horarios(servicio.categoria)
         elif 'servicio' in self.data:
+            # Si el formulario fue enviado pero no está asignado en la instancia
             try:
                 servicio_id = int(self.data.get('servicio'))
                 servicio = Servicio.objects.get(id=servicio_id)
@@ -50,7 +51,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
         hora = cleaned_data.get('hora')
 
         if fecha and hora:
-            # Combinar la fecha y la hora en un objeto datetime para fecha_agendamiento
+            # Combinar la fecha y la hora en un objeto datetime
             fecha_hora_str = f"{fecha} {hora}"
             fecha_agendamiento = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
 
@@ -58,7 +59,6 @@ class ReservaServicioInlineForm(forms.ModelForm):
             cleaned_data['fecha_agendamiento'] = make_aware(fecha_agendamiento)
 
         return cleaned_data
-
     
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
