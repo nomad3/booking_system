@@ -30,7 +30,7 @@ def servicios_vendidos_view(request):
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
 
-    # Filtrar por fecha
+    # Filtrar por fecha del servicio agendado
     if fecha_inicio and fecha_fin:
         # Convertir las fechas de strings a objetos datetime
         fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
@@ -38,14 +38,14 @@ def servicios_vendidos_view(request):
 
         # Filtrar entre las dos fechas (inclusive)
         servicios_vendidos = servicios_vendidos.filter(
-            venta_reserva__fecha_reserva__date__gte=fecha_inicio,
-            venta_reserva__fecha_reserva__date__lte=fecha_fin
+            fecha_agendamiento__date__gte=fecha_inicio,
+            fecha_agendamiento__date__lte=fecha_fin
         )
     elif fecha_inicio:
         # Si solo hay una fecha de inicio, filtrar por esa fecha específica
         fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
         servicios_vendidos = servicios_vendidos.filter(
-            venta_reserva__fecha_reserva__date=fecha_inicio
+            fecha_agendamiento__date=fecha_inicio
         )
 
     # Preparar los datos para la tabla
@@ -56,10 +56,12 @@ def servicios_vendidos_view(request):
             'venta_reserva_id': servicio.venta_reserva.id,  # Número de venta/reserva
             'cliente_nombre': servicio.venta_reserva.cliente.nombre,  # Nombre del cliente
             'categoria_servicio': servicio.servicio.categoria.nombre,  # Categoría del servicio
+            'servicio_nombre': servicio.servicio.nombre,  # Nombre del servicio
+            'fecha_agendamiento': servicio.fecha_agendamiento,  # Fecha del servicio reservado
+            'hora_agendamiento': servicio.fecha_agendamiento.strftime('%H:%M'),  # Hora del servicio reservado
             'monto': servicio.servicio.precio_base,  # Monto por persona
             'cantidad_personas': servicio.cantidad_personas,  # Cantidad de pasajeros
-            'total_monto': total_monto,  # Monto total (monto * cantidad_personas)
-            'fecha_reserva': servicio.venta_reserva.fecha_reserva,  # Fecha de la reserva
+            'total_monto': total_monto  # Monto total (monto * cantidad_personas)
         })
 
     # Pasar los datos a la plantilla

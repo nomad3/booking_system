@@ -25,8 +25,8 @@
                 <th>Nombre Cliente</th>
                 <th>Categoría Servicio</th>
                 <th>Servicio</th>
-                <th>Fecha</th>
-                <th>Hora</th>
+                <th>Fecha del Servicio</th>
+                <th>Hora del Servicio</th>
                 <th>Monto por Persona</th>
                 <th>Cantidad de Pasajeros</th>
                 <th>Monto Total</th>
@@ -40,7 +40,7 @@
                 <td>{{ servicio.categoria_servicio }}</td>
                 <td>{{ servicio.servicio_nombre }}</td>
                 <td>{{ servicio.fecha_agendamiento|date:"Y-m-d" }}</td>
-                <td>{{ servicio.fecha_agendamiento|time:"H:i" }}</td>
+                <td>{{ servicio.hora_agendamiento }}</td>
                 <td>{{ servicio.monto }}</td>
                 <td>{{ servicio.cantidad_personas }}</td>
                 <td>{{ servicio.total_monto }}</td>
