@@ -65,6 +65,14 @@ def servicios_vendidos_view(request):
             'cantidad_personas': servicio.cantidad_personas,  # Cantidad de pasajeros
             'total_monto': total_monto  # Monto total (monto * cantidad_personas)
         })
+        # Pasar los datos y las categorías a la plantilla
+    return render(request, 'ventas/servicios_vendidos.html', {
+        'servicios': data,
+        'categorias': categorias,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'categoria_id': categoria_id
+    })
 
     # Pasar los datos a la plantilla
     return render(request, 'ventas/servicios_vendidos.html', {'servicios': data})
