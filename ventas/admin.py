@@ -16,11 +16,9 @@ class ReservaServicioInlineForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
-        # Definir el widget para la fecha de agendamiento (solo la parte de la fecha)
-        self.fields['fecha_agendamiento'].widget = DateInput(format='%Y-%m-%d', attrs={
-            'class': 'form-control',
-            'type': 'date',
-        })
+        # Eliminar el widget repetido de fecha_agendamiento
+        if 'fecha_agendamiento' in self.fields:
+            del self.fields['fecha_agendamiento']
 
         # Definir las opciones de hora según el tipo de servicio
         if self.instance and self.instance.pk:
@@ -51,7 +49,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
 
         # Establecer el widget de horas como un selector predefinido
         if 'hora' in self.fields:
-            self.fields['hora'].widget = Select(attrs={  # Aquí se usa el widget 'Select'
+            self.fields['hora'].widget = Select(attrs={
                 'class': 'form-control',
             })
 
