@@ -9,6 +9,10 @@ class ReservaServicioInlineForm(forms.ModelForm):
         model = ReservaServicio
         fields = '__all__'
 
+    # Dividimos la fecha y la hora
+    fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True)
+    hora = forms.ChoiceField(required=True)
+
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
@@ -18,17 +22,14 @@ class ReservaServicioInlineForm(forms.ModelForm):
             'type': 'date',
         })
 
-        # Evitar intentar acceder a 'servicio' si no existe una instancia aún
+        # Definir las opciones de hora según el tipo de servicio
         if self.instance and self.instance.pk:  # Solo si la instancia ya existe
-            servicio = self.instance.servicio  # Obtener el servicio si está definido
-            # Definir las opciones de hora según el tipo de servicio
+            servicio = self.instance.servicio
             if servicio:
                 if servicio.categoria.nombre == 'Cabañas':
-                    self.fields['hora_agendamiento'] = forms.ChoiceField(choices=[
-                        ('16:00', '16:00'),
-                    ])
+                    self.fields['hora'].choices = [('16:00', '16:00')]
                 elif servicio.categoria.nombre == 'Tinas':
-                    self.fields['hora_agendamiento'] = forms.ChoiceField(choices=[
+                    self.fields['hora'].choices = [
                         ('14:00', '14:00'),
                         ('14:30', '14:30'),
                         ('17:00', '17:00'),
@@ -36,9 +37,9 @@ class ReservaServicioInlineForm(forms.ModelForm):
                         ('19:30', '19:30'),
                         ('21:30', '21:30'),
                         ('22:00', '22:00'),
-                    ])
+                    ]
                 elif servicio.categoria.nombre == 'Masajes':
-                    self.fields['hora_agendamiento'] = forms.ChoiceField(choices=[
+                    self.fields['hora'].choices = [
                         ('13:00', '13:00'),
                         ('14:15', '14:15'),
                         ('15:30', '15:30'),
@@ -46,13 +47,28 @@ class ReservaServicioInlineForm(forms.ModelForm):
                         ('18:00', '18:00'),
                         ('19:15', '19:15'),
                         ('20:30', '20:30'),
-                    ])
+                    ]
 
         # Establecer el widget de horas como un selector predefinido
-        if 'hora_agendamiento' in self.fields:
-            self.fields['hora_agendamiento'].widget = Select(attrs={
+        if 'hora' in self.fields:
+            self.fields['hora'].widget = Select(attrs={
                 'class': 'form-control',
             })
+
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha = cleaned_data.get('fecha')
+        hora = cleaned_data.get('hora')
+
+        if fecha and hora:
+            # Combinar la fecha y la hora en un objeto datetime
+            fecha_hora_str = f"{fecha} {hora}"
+            fecha_agendamiento = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
+
+            # Hacer que la fecha y hora sea "aware" (con zona horaria)
+            cleaned_data['fecha_agendamiento'] = make_aware(fecha_agendamiento)
+
+        return cleaned_data
 
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
