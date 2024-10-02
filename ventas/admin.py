@@ -9,9 +9,9 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']  # Incluimos solo los campos necesarios
+        fields = ['servicio', 'cantidad_personas']  # Solo incluimos los campos relevantes
 
-    # Campos separados para fecha y hora, pero no duplicamos la fecha
+    # Campos separados para fecha y hora
     fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
     hora = forms.ChoiceField(required=True, label='Hora', choices=[('', 'Seleccione un horario')])
 
@@ -21,13 +21,14 @@ class ReservaServicioInlineForm(forms.ModelForm):
         # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Verificamos si hay un servicio seleccionado o si estamos cargando un formulario nuevo
-        if self.instance and self.instance.pk and getattr(self.instance, 'servicio', None):
+        # Si ya existe un servicio, cargar los horarios
+        if self.instance and self.instance.servicio:
             servicio = self.instance.servicio
-            if servicio and servicio.categoria:
+            if servicio.categoria:
                 self.cargar_horarios(servicio.categoria)
+        
+        # Si se ha seleccionado un servicio en el formulario, cargar los horarios según la categoría
         elif 'servicio' in self.data:
-            # Si el formulario fue enviado pero no está asignado en la instancia
             try:
                 servicio_id = int(self.data.get('servicio'))
                 servicio = Servicio.objects.get(id=servicio_id)
@@ -37,25 +38,28 @@ class ReservaServicioInlineForm(forms.ModelForm):
 
     def cargar_horarios(self, categoria):
         """
-        Carga los horarios desde la categoría del servicio, separados por comas.
+        Carga los horarios disponibles según la categoría del servicio.
         """
-        if categoria.horarios:  # Verificar si la categoría tiene horarios definidos
+        if categoria.horarios:  # Si la categoría tiene horarios definidos
             horarios = [(hora.strip(), hora.strip()) for hora in categoria.horarios.split(',')]
             self.fields['hora'].choices = horarios
         else:
             self.fields['hora'].choices = [('', 'No hay horarios disponibles')]
 
     def clean(self):
+        """
+        Combina la fecha y la hora en el campo `fecha_agendamiento`.
+        """
         cleaned_data = super().clean()
         fecha = cleaned_data.get('fecha')
         hora = cleaned_data.get('hora')
 
         if fecha and hora:
-            # Combinar la fecha y la hora en un objeto datetime
+            # Combinar fecha y hora en un solo campo
             fecha_hora_str = f"{fecha} {hora}"
             fecha_agendamiento = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
 
-            # Hacer que la fecha y hora sea "aware" (con zona horaria)
+            # Asegurarnos de que la fecha tenga información de zona horaria
             cleaned_data['fecha_agendamiento'] = make_aware(fecha_agendamiento)
 
         return cleaned_data
