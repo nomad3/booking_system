@@ -2,6 +2,7 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
 from django.shortcuts import render
+from datetime import datetime
 from django.utils import timezone
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio
 from .utils import verificar_disponibilidad
@@ -23,30 +24,22 @@ from .serializers import (
 )
 
 def servicios_vendidos_view(request):
-    # Consultar todos los servicios vendidos
-    servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
-
-    # Obtener los parámetros de filtrado desde el request
+    # Obtener los parámetros de fecha desde la URL
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
 
-    # Filtrar por fecha del servicio agendado
-    if fecha_inicio and fecha_fin:
-        # Convertir las fechas de strings a objetos datetime
-        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+    # Convertir fechas a objetos datetime (manejo de caso de que no haya fecha fin)
+    servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
 
-        # Filtrar entre las dos fechas (inclusive)
-        servicios_vendidos = servicios_vendidos.filter(
-            fecha_agendamiento__date__gte=fecha_inicio,
-            fecha_agendamiento__date__lte=fecha_fin
-        )
-    elif fecha_inicio:
-        # Si solo hay una fecha de inicio, filtrar por esa fecha específica
+    if fecha_inicio:
         fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-        servicios_vendidos = servicios_vendidos.filter(
-            fecha_agendamiento__date=fecha_inicio
-        )
+        if fecha_fin:
+            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+            # Filtrar por rango de fechas si ambas fechas están presentes
+            servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__range=[fecha_inicio, fecha_fin])
+        else:
+            # Si solo se proporciona la fecha de inicio, filtrar por esa fecha o posterior
+            servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio)
 
     # Preparar los datos para la tabla
     data = []
@@ -57,19 +50,15 @@ def servicios_vendidos_view(request):
             'cliente_nombre': servicio.venta_reserva.cliente.nombre,  # Nombre del cliente
             'categoria_servicio': servicio.servicio.categoria.nombre,  # Categoría del servicio
             'servicio_nombre': servicio.servicio.nombre,  # Nombre del servicio
-            'fecha_agendamiento': servicio.fecha_agendamiento,  # Fecha del servicio reservado
-            'hora_agendamiento': servicio.fecha_agendamiento.strftime('%H:%M'),  # Hora del servicio reservado
+            'fecha_agendamiento': servicio.fecha_agendamiento.date(),  # Solo la fecha
+            'hora_agendamiento': servicio.fecha_agendamiento.time(),  # Solo la hora
             'monto': servicio.servicio.precio_base,  # Monto por persona
             'cantidad_personas': servicio.cantidad_personas,  # Cantidad de pasajeros
             'total_monto': total_monto  # Monto total (monto * cantidad_personas)
         })
 
     # Pasar los datos a la plantilla
-    return render(request, 'ventas/servicios_vendidos.html', {
-        'servicios': data,
-        'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin,
-    })
+    return render(request, 'ventas/servicios_vendidos.html', {'servicios': data, 'fecha_inicio': fecha_inicio, 'fecha_fin': fecha_fin})
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()
