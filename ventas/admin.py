@@ -21,38 +21,6 @@ class ReservaServicioInlineForm(forms.ModelForm):
         # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Si ya hay un servicio seleccionado, mostrar los slots de hora según la categoría
-        if self.instance and self.instance.pk:
-            servicio = self.instance.servicio
-            if servicio:
-                self.asignar_horarios(servicio.categoria.nombre)
-
-        # Para nuevas reservas, si se pasa un servicio a través de `initial`
-        elif 'servicio' in self.initial and self.initial['servicio']:
-            servicio = self.initial['servicio']
-            if servicio.categoria:
-                self.asignar_horarios(servicio.categoria.nombre)
-
-    def asignar_horarios(self, categoria_nombre):
-        """
-        Asigna los slots de horarios según la categoría del servicio.
-        Esta función ya no es crítica con el uso del JavaScript, pero aún se ejecuta si el servicio ya está seleccionado en la inicialización.
-        """
-        if categoria_nombre == 'Cabañas':
-            self.fields['hora'].choices = [('16:00', '16:00')]
-        elif categoria_nombre == 'Tinas':
-            self.fields['hora'].choices = [
-                ('14:00', '14:00'), ('14:30', '14:30'), ('17:00', '17:00'),
-                ('19:00', '19:00'), ('19:30', '19:30'), ('21:30', '21:30'),
-                ('22:00', '22:00')
-            ]
-        elif categoria_nombre == 'Masajes':
-            self.fields['hora'].choices = [
-                ('13:00', '13:00'), ('14:15', '14:15'), ('15:30', '15:30'),
-                ('16:45', '16:45'), ('18:00', '18:00'), ('19:15', '19:15'),
-                ('20:30', '20:30')
-            ]
-
     def clean(self):
         cleaned_data = super().clean()
         fecha = cleaned_data.get('fecha')
@@ -67,7 +35,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
             cleaned_data['fecha_agendamiento'] = make_aware(fecha_agendamiento)
 
         return cleaned_data
-
+    
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
     form = ReservaServicioInlineForm
@@ -92,7 +60,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
     list_filter = ('cliente', 'servicios', 'fecha_reserva', 'estado')
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
-    
+
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
 
