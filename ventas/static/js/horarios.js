@@ -1,56 +1,39 @@
 document.addEventListener('DOMContentLoaded', function () {
-    function obtenerCategoria(servicioId) {
-        // Esta función debe devolver la categoría basada en el servicioId
-        const categoriasPorServicio = {
-            1: 'Cabañas',  // Servicio 1 es Cabañas
-            2: 'Tinas',    // Servicio 2 es Tinas
-            3: 'Masajes'   // Servicio 3 es Masajes
-            // Agrega más servicios y categorías aquí
-        };
-
-        return categoriasPorServicio[servicioId] || null;  // Devuelve la categoría o null si no existe
-    }
-
-    function actualizarHorarios(servicioField) {
-        const servicioId = servicioField.value;
-        const row = servicioField.closest('tr');  // Seleccionamos la fila en la que está el servicio
-        const horaField = row.querySelector('select[name$="-hora"]');  // Buscamos el campo de hora en la misma fila
-
-        // Limpia el campo de hora antes de cargar los nuevos horarios
-        horaField.innerHTML = '<option value="">Seleccione un horario</option>';
-
-        if (servicioId) {
-            const categoria = obtenerCategoria(servicioId);
-
-            // Definir los horarios para cada categoría
-            const horariosPorCategoria = {
-                'Cabañas': ['16:00'],
-                'Tinas': ['14:00', '14:30', '17:00', '19:00', '19:30', '21:30', '22:00'],
-                'Masajes': ['13:00', '14:15', '15:30', '16:45', '18:00', '19:15', '20:30']
-            };
-
-            const horarios = horariosPorCategoria[categoria];  // Obtener horarios basados en la categoría
-
-            if (horarios) {
-                // Cargar los horarios en el campo de hora
-                horarios.forEach(function (hora) {
-                    const option = document.createElement('option');
-                    option.value = hora;
-                    option.text = hora;
-                    horaField.appendChild(option);
-                });
-            } else {
-                // Si no hay horarios disponibles para este servicio
-                horaField.innerHTML = '<option value="">No hay horarios disponibles</option>';
-            }
-        }
+    function obtenerHorariosDesdeServidor(servicioId, horaField) {
+        fetch(`/api/horarios/${servicioId}/`)
+            .then(response => response.json())
+            .then(data => {
+                // Limpia el campo de hora
+                horaField.innerHTML = '<option value="">Seleccione un horario</option>';
+                
+                // Si hay horarios disponibles
+                if (data.horarios && data.horarios.length > 0) {
+                    data.horarios.forEach(function (hora) {
+                        const option = document.createElement('option');
+                        option.value = hora;
+                        option.text = hora;
+                        horaField.appendChild(option);
+                    });
+                } else {
+                    horaField.innerHTML = '<option value="">No hay horarios disponibles</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Error al obtener los horarios:', error);
+            });
     }
 
     // Agrega el evento 'change' a todos los campos de servicio en el momento de la carga de la página
     const servicioFields = document.querySelectorAll('select[name$="-servicio"]');
     servicioFields.forEach(function(servicioField) {
         servicioField.addEventListener('change', function () {
-            actualizarHorarios(this);
+            const servicioId = this.value;
+            const horaField = this.closest('tr').querySelector('select[name$="-hora"]');
+            
+            // Verificar si hay un servicio seleccionado y llamar a la función para obtener los horarios
+            if (servicioId) {
+                obtenerHorariosDesdeServidor(servicioId, horaField);
+            }
         });
     });
 
@@ -62,7 +45,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 const newServicioField = document.querySelector('tr.dynamic-reservaservicios:last-of-type select[name$="-servicio"]');
                 if (newServicioField) {
                     newServicioField.addEventListener('change', function () {
-                        actualizarHorarios(this);
+                        const servicioId = this.value;
+                        const horaField = this.closest('tr').querySelector('select[name$="-hora"]');
+                        
+                        if (servicioId) {
+                            obtenerHorariosDesdeServidor(servicioId, horaField);
+                        }
                     });
                 }
             }, 500);

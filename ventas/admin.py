@@ -10,44 +10,24 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas']  # Excluimos 'fecha_agendamiento'
-
-    # Campos separados para fecha y hora
-    fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
-    hora = forms.ChoiceField(required=True, label='Hora', choices=[('', 'Seleccione un horario')])
+        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']  # Volvemos a incluir 'fecha_agendamiento'
 
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
-        # Inicializar el campo 'hora' con una opción de selección por defecto
-        self.fields['hora'].choices = [('', 'Seleccione un horario')]
-        
-        # No cargamos horarios aquí, lo haremos con JS
+        # No necesitamos manipular 'fecha_agendamiento' ni 'hora', Django manejará la selección de la fecha/hora
+        self.fields['fecha_agendamiento'].widget = forms.DateTimeInput(attrs={'type': 'datetime-local'})
 
     def clean(self):
-        """
-        Combina la fecha y la hora en el campo `fecha_agendamiento`.
-        """
         cleaned_data = super().clean()
-        fecha = cleaned_data.get('fecha')
-        hora = cleaned_data.get('hora')
-
-        if fecha and hora:
-            # Combinar la fecha y la hora en un solo campo `fecha_agendamiento`
-            fecha_hora_str = f"{fecha} {hora}"
-            fecha_agendamiento = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
-            cleaned_data['fecha_agendamiento'] = make_aware(fecha_agendamiento)
-
+        # No hay necesidad de combinar fecha y hora, ya que usamos 'fecha_agendamiento' directamente
         return cleaned_data
+
     
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
     form = ReservaServicioInlineForm
     extra = 1
-
-    class Media:
-        js = ('js/horarios.js',)  # Asegúrate de que el archivo JS esté en tu directorio estático
-
 
 class ReservaProductoInline(admin.TabularInline):
     model = ReservaProducto
