@@ -11,6 +11,11 @@ class ReservaServicioInlineForm(forms.ModelForm):
         model = ReservaServicio
         fields = ['servicio', 'cantidad_personas']  # Excluimos 'fecha_agendamiento'
 
+    # Campos sepclass ReservaServicioInlineForm(forms.ModelForm):
+    class Meta:
+        model = ReservaServicio
+        fields = ['servicio', 'cantidad_personas']  # Excluimos 'fecha_agendamiento'
+
     # Campos separados para fecha y hora
     fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
     hora = forms.ChoiceField(required=True, label='Hora', choices=[('', 'Seleccione un horario')])
@@ -18,7 +23,24 @@ class ReservaServicioInlineForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
+        # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
+
+        # Si hay un servicio seleccionado, cargar los horarios de su categoría
+        if self.instance and self.instance.servicio:
+            servicio = self.instance.servicio
+            if servicio.categoria:
+                self.cargar_horarios(servicio.categoria)
+
+    def cargar_horarios(self, categoria):
+        """
+        Carga los horarios desde la categoría del servicio.
+        """
+        if categoria.horarios:
+            horarios = [(hora.strip(), hora.strip()) for hora in categoria.horarios.split(',')]
+            self.fields['hora'].choices = horarios
+        else:
+            self.fields['hora'].choices = [('', 'No hay horarios disponibles')]
 
     def clean(self):
         cleaned_data = super().clean()

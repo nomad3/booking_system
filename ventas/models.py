@@ -36,6 +36,7 @@ class Producto(models.Model):
 
 class CategoriaServicio(models.Model):
     nombre = models.CharField(max_length=100)
+    horarios = models.CharField(max_length=200, help_text="Ingresa los horarios disponibles separados por comas. Ejemplo: 14:00, 15:30, 17:00", blank=True)
 
     def __str__(self):
         return self.nombre
