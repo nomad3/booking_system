@@ -18,10 +18,10 @@ class ReservaServicioInlineForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
-        # Inicializamos la lista de opciones de hora vacía con un mensaje de selección
+        # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Si ya hay un servicio seleccionado (edición), mostrar los slots de hora según la categoría
+        # Si ya hay un servicio seleccionado, mostrar los slots de hora según la categoría
         if self.instance and self.instance.pk:
             servicio = self.instance.servicio
             if servicio:
@@ -36,30 +36,21 @@ class ReservaServicioInlineForm(forms.ModelForm):
     def asignar_horarios(self, categoria_nombre):
         """
         Asigna los slots de horarios según la categoría del servicio.
+        Esta función ya no es crítica con el uso del JavaScript, pero aún se ejecuta si el servicio ya está seleccionado en la inicialización.
         """
         if categoria_nombre == 'Cabañas':
-            self.fields['hora'].choices = [
-                ('16:00', '16:00'),
-            ]
+            self.fields['hora'].choices = [('16:00', '16:00')]
         elif categoria_nombre == 'Tinas':
             self.fields['hora'].choices = [
-                ('14:00', '14:00'),
-                ('14:30', '14:30'),
-                ('17:00', '17:00'),
-                ('19:00', '19:00'),
-                ('19:30', '19:30'),
-                ('21:30', '21:30'),
-                ('22:00', '22:00'),
+                ('14:00', '14:00'), ('14:30', '14:30'), ('17:00', '17:00'),
+                ('19:00', '19:00'), ('19:30', '19:30'), ('21:30', '21:30'),
+                ('22:00', '22:00')
             ]
         elif categoria_nombre == 'Masajes':
             self.fields['hora'].choices = [
-                ('13:00', '13:00'),
-                ('14:15', '14:15'),
-                ('15:30', '15:30'),
-                ('16:45', '16:45'),
-                ('18:00', '18:00'),
-                ('19:15', '19:15'),
-                ('20:30', '20:30'),
+                ('13:00', '13:00'), ('14:15', '14:15'), ('15:30', '15:30'),
+                ('16:45', '16:45'), ('18:00', '18:00'), ('19:15', '19:15'),
+                ('20:30', '20:30')
             ]
 
     def clean(self):
@@ -79,8 +70,12 @@ class ReservaServicioInlineForm(forms.ModelForm):
 
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
-    form = ReservaServicioInlineForm  # Usar el formulario personalizado
+    form = ReservaServicioInlineForm
     extra = 1
+
+    class Media:
+        # Aquí agregamos el archivo JS que manejará la lógica dinámica de horarios
+        js = ('js/dynamic_horarios.js',)  # Asegúrate de tener este archivo en tu directorio de estáticos
 
 class ReservaProductoInline(admin.TabularInline):
     model = ReservaProducto
@@ -92,20 +87,12 @@ class PagoInline(admin.TabularInline):
 
 
 class VentaReservaAdmin(admin.ModelAdmin):
-    # Columnas que se mostrarán en el listado
     list_display = ('id', 'cliente', 'fecha_reserva', 'estado', 'total', 'pagado', 'saldo_pendiente')
-
-    # Campos que serán solo de lectura en la vista de detalles
     readonly_fields = ('total', 'pagado', 'saldo_pendiente')
-
-    # Agregar las relaciones de productos, servicios y pagos como inlines
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
-
-    # Filtros por cliente, servicio, fecha de reserva y estado
     list_filter = ('cliente', 'servicios', 'fecha_reserva', 'estado')
-
-    # Búsqueda por nombre, email y teléfono del cliente
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
+    
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
 
