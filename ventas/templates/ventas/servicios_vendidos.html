@@ -8,11 +8,11 @@
     <form method="GET" action="">
       <div class="field-box">
         <label for="fecha_inicio">Fecha Inicio:</label>
-        <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio }}" class="vDateField">
+        <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio|date:'Y-m-d' }}" class="vDateField">
       </div>
       <div class="field-box">
         <label for="fecha_fin">Fecha Fin:</label>
-        <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin }}" class="vDateField">
+        <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin|date:'Y-m-d' }}" class="vDateField">
       </div>
       <button type="submit" class="btn btn-primary">Filtrar</button>
     </form>
@@ -39,8 +39,8 @@
                 <td>{{ servicio.cliente_nombre }}</td>
                 <td>{{ servicio.categoria_servicio }}</td>
                 <td>{{ servicio.servicio_nombre }}</td>
-                <td>{{ servicio.fecha_agendamiento }}</td>
-                <td>{{ servicio.hora_agendamiento }}</td>
+                <td>{{ servicio.fecha_agendamiento|date:"Y-m-d" }}</td>
+                <td>{{ servicio.fecha_agendamiento|time:"H:i" }}</td>
                 <td>{{ servicio.monto }}</td>
                 <td>{{ servicio.cantidad_personas }}</td>
                 <td>{{ servicio.total_monto }}</td>
