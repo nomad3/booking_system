@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django import forms
+from django.utils.timezone import make_aware
 from django.forms import DateInput, TimeInput, Select
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio
 
@@ -7,44 +8,53 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas']  # Excluir 'fecha_agendamiento' directamente
+        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']  # Incluimos 'fecha_agendamiento'
 
     # Campos separados para fecha y hora
     fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True)
-    hora = forms.ChoiceField(required=True)
+    hora = forms.ChoiceField(required=False)  # Inicialmente vacío
 
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
 
-        # Definir las opciones de hora según el tipo de servicio
-        if self.instance and self.instance.pk:
+        # Inicializar el campo de hora vacío si no hay servicio seleccionado
+        self.fields['hora'].choices = []  # Dejar vacío hasta que se seleccione un servicio
+
+        if self.instance and self.instance.pk:  # Si se está editando una reserva existente
             servicio = self.instance.servicio
-            if servicio:
-                if servicio.categoria.nombre == 'Cabañas':
-                    self.fields['hora'].choices = [('16:00', '16:00')]
-                elif servicio.categoria.nombre == 'Tinas':
-                    self.fields['hora'].choices = [
-                        ('14:00', '14:00'),
-                        ('14:30', '14:30'),
-                        ('17:00', '17:00'),
-                        ('19:00', '19:00'),
-                        ('19:30', '19:30'),
-                        ('21:30', '21:30'),
-                        ('22:00', '22:00'),
-                    ]
-                elif servicio.categoria.nombre == 'Masajes':
-                    self.fields['hora'].choices = [
-                        ('13:00', '13:00'),
-                        ('14:15', '14:15'),
-                        ('15:30', '15:30'),
-                        ('16:45', '16:45'),
-                        ('18:00', '18:00'),
-                        ('19:15', '19:15'),
-                        ('20:30', '20:30'),
-                    ]
-            else:
-                # Si no hay servicio definido, vaciar el campo de hora
-                self.fields['hora'].choices = []
+        else:
+            servicio = None  # Para nuevas reservas, asumimos que el servicio aún no ha sido seleccionado
+
+        # Si ya hay un servicio seleccionado, asignar los horarios correspondientes
+        if servicio and servicio.categoria:
+            self.asignar_horarios(servicio.categoria.nombre)
+
+    def asignar_horarios(self, categoria_nombre):
+        """
+        Asigna los slots de horarios según la categoría del servicio.
+        """
+        if categoria_nombre == 'Cabañas':
+            self.fields['hora'].choices = [('16:00', '16:00')]
+        elif categoria_nombre == 'Tinas':
+            self.fields['hora'].choices = [
+                ('14:00', '14:00'),
+                ('14:30', '14:30'),
+                ('17:00', '17:00'),
+                ('19:00', '19:00'),
+                ('19:30', '19:30'),
+                ('21:30', '21:30'),
+                ('22:00', '22:00'),
+            ]
+        elif categoria_nombre == 'Masajes':
+            self.fields['hora'].choices = [
+                ('13:00', '13:00'),
+                ('14:15', '14:15'),
+                ('15:30', '15:30'),
+                ('16:45', '16:45'),
+                ('18:00', '18:00'),
+                ('19:15', '19:15'),
+                ('20:30', '20:30'),
+            ]
 
     def clean(self):
         cleaned_data = super().clean()
