@@ -11,11 +11,6 @@ class ReservaServicioInlineForm(forms.ModelForm):
         model = ReservaServicio
         fields = ['servicio', 'cantidad_personas']  # Excluimos 'fecha_agendamiento'
 
-    # Campos sepclass ReservaServicioInlineForm(forms.ModelForm):
-    class Meta:
-        model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas']  # Excluimos 'fecha_agendamiento'
-
     # Campos separados para fecha y hora
     fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
     hora = forms.ChoiceField(required=True, label='Hora', choices=[('', 'Seleccione un horario')])
@@ -26,10 +21,10 @@ class ReservaServicioInlineForm(forms.ModelForm):
         # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Si hay un servicio seleccionado, cargar los horarios de su categoría
-        if self.instance and self.instance.servicio:
+        # Verificar si self.instance tiene un servicio antes de acceder a él
+        if self.instance and hasattr(self.instance, 'servicio') and self.instance.servicio:
             servicio = self.instance.servicio
-            if servicio.categoria:
+            if servicio and servicio.categoria:
                 self.cargar_horarios(servicio.categoria)
 
     def cargar_horarios(self, categoria):
