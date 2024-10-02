@@ -11,29 +11,12 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']
+        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']  # Incluimos 'fecha_agendamiento'
 
     def __init__(self, *args, **kwargs):
         super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
-        # Usar el widget adecuado para seleccionar fecha y hora
+        # Usar un widget que permita seleccionar fecha y hora
         self.fields['fecha_agendamiento'].widget = DateTimeInput(attrs={'type': 'datetime-local'})
-
-    def clean_fecha_agendamiento(self):
-        fecha_agendamiento = self.cleaned_data.get('fecha_agendamiento')
-
-        # Verificar que no se esté tratando como lista
-        if isinstance(fecha_agendamiento, list):
-            raise forms.ValidationError("Fecha y hora no pueden ser una lista. Ingrese un valor válido.")
-
-        if fecha_agendamiento and isinstance(fecha_agendamiento, str):
-            try:
-                # Convertir la fecha ingresada por el usuario a datetime si es necesario
-                fecha_agendamiento = datetime.strptime(fecha_agendamiento, '%Y-%m-%dT%H:%M')
-                fecha_agendamiento = timezone.make_aware(fecha_agendamiento)  # Hacer la fecha "timezone-aware"
-            except ValueError:
-                raise forms.ValidationError("El formato de la fecha y hora no es válido.")
-
-        return fecha_agendamiento
     
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio

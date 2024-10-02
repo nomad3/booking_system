@@ -178,7 +178,7 @@ class ReservaProducto(models.Model):
 class ReservaServicio(models.Model):
     venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaservicios')
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
-    fecha_agendamiento = models.DateTimeField(null=True, blank=True)  # Permitir que el usuario lo seleccione
+    fecha_agendamiento = models.DateTimeField(default=timezone.now)  # Especificamos el tipo de dato correcto
     cantidad_personas = models.PositiveIntegerField(default=1)
 
     def __str__(self):
