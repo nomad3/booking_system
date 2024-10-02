@@ -9,7 +9,7 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'cantidad_personas']  # Excluimos 'fecha_agendamiento'
+        fields = ['servicio', 'cantidad_personas', 'fecha_agendamiento']  # Incluimos 'fecha_agendamiento'
 
     # Campos separados para fecha y hora
     fecha = forms.DateField(widget=DateInput(attrs={'type': 'date'}), required=True, label='Fecha')
@@ -21,11 +21,18 @@ class ReservaServicioInlineForm(forms.ModelForm):
         # Inicializamos el campo 'hora' con una opción de selección por defecto
         self.fields['hora'].choices = [('', 'Seleccione un horario')]
 
-        # Si la instancia tiene un servicio seleccionado, cargar los horarios de la categoría
+        # Si ya hay un servicio seleccionado, cargar los horarios de la categoría
         if self.instance and self.instance.servicio:
             servicio = self.instance.servicio
             if servicio.categoria:
                 self.cargar_horarios(servicio.categoria)
+        elif 'servicio' in self.data:
+            try:
+                servicio_id = int(self.data.get('servicio'))
+                servicio = Servicio.objects.get(id=servicio_id)
+                self.cargar_horarios(servicio.categoria)
+            except (ValueError, Servicio.DoesNotExist):
+                pass
 
     def cargar_horarios(self, categoria):
         """
@@ -43,7 +50,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
         hora = cleaned_data.get('hora')
 
         if fecha and hora:
-            # Combinar la fecha y la hora en un objeto datetime
+            # Combinar la fecha y la hora en un objeto datetime para fecha_agendamiento
             fecha_hora_str = f"{fecha} {hora}"
             fecha_agendamiento = datetime.strptime(fecha_hora_str, "%Y-%m-%d %H:%M")
 
@@ -51,6 +58,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
             cleaned_data['fecha_agendamiento'] = make_aware(fecha_agendamiento)
 
         return cleaned_data
+
     
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
