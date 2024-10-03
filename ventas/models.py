@@ -145,6 +145,11 @@ class Pago(models.Model):
         ('webpay', 'WebPay'),
         ('descuento', 'Descuento'),
         ('giftcard', 'GiftCard'),
+        ('flow ', 'FLOW'),
+        ('mercadopago', 'MercadoPago'),
+        ('scotiabank', 'ScotiaBank'),
+        ('bancoestado', 'BancoEstado'),
+        ('cuentarut', 'CuentaRut'),
     ]
 
     venta_reserva = models.ForeignKey(VentaReserva, related_name='pagos', on_delete=models.CASCADE)
