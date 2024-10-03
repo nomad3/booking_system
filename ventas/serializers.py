@@ -39,12 +39,18 @@ class ClienteSerializer(serializers.ModelSerializer):
 
 
 class ReservaProductoSerializer(serializers.ModelSerializer):
-    producto = ProductoSerializer(read_only=True)
-
     class Meta:
         model = ReservaProducto
-        fields = '__all__'
+        fields = ['producto', 'cantidad']
 
+    def create(self, validated_data):
+        producto = validated_data['producto']
+        cantidad = validated_data['cantidad']
+
+        # Reducir inventario durante la creación del producto
+        producto.reducir_inventario(cantidad)
+
+        return super().create(validated_data)
 
 class ReservaServicioSerializer(serializers.ModelSerializer):
     servicio = ServicioSerializer(read_only=True)
@@ -72,7 +78,7 @@ class PagoSerializer(serializers.ModelSerializer):
 
 class VentaReservaSerializer(serializers.ModelSerializer):
     pagos = PagoSerializer(many=True, read_only=True)
-    productos = ReservaProductoSerializer(many=True)  # Los productos no son read-only
+    productos = ReservaProductoSerializer(many=True, source='reservaprodutos')
     servicios = ReservaServicioSerializer(many=True, read_only=True, source='reservaservicios')
     total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     pagado = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
@@ -92,11 +98,9 @@ class VentaReservaSerializer(serializers.ModelSerializer):
             producto = producto_data['producto']
             cantidad = producto_data['cantidad']
 
-            # Reducir el inventario
-            producto.reducir_inventario(cantidad)
-
-            # Registrar la venta del producto
+            # Crear la relación producto-venta y reducir inventario
             ReservaProducto.objects.create(venta_reserva=venta_reserva, producto=producto, cantidad=cantidad)
+            producto.reducir_inventario(cantidad)  # Reducir inventario
 
         # Calcular el total después de agregar productos
         venta_reserva.calcular_total()
@@ -105,16 +109,14 @@ class VentaReservaSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         productos_data = validated_data.pop('productos', [])
         
-        # Procesar los productos vendidos (esto puede involucrar reducir más inventario o modificar)
+        # Procesar los productos vendidos
         for producto_data in productos_data:
             producto = producto_data['producto']
             cantidad = producto_data['cantidad']
 
-            # Reducir el inventario
-            producto.reducir_inventario(cantidad)
-
-            # Actualizar la venta del producto
+            # Actualizar la relación producto-venta y reducir inventario
             ReservaProducto.objects.update_or_create(venta_reserva=instance, producto=producto, defaults={'cantidad': cantidad})
+            producto.reducir_inventario(cantidad)  # Reducir inventario
 
         # Calcular el total después de actualizar productos
         instance.calcular_total()

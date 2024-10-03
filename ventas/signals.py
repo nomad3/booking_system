@@ -106,7 +106,7 @@ def registrar_movimiento_pago(sender, instance, created, **kwargs):
         descripcion=descripcion
     )
 
-    # Solo actualizar el saldo cuando se crea el pago
+    # Actualizar el saldo solo si el pago es nuevo
     if created:
         instance.venta_reserva.pagado += instance.monto
         instance.venta_reserva.actualizar_saldo()
@@ -125,7 +125,7 @@ def registrar_movimiento_eliminacion_pago(sender, instance, **kwargs):
     instance.venta_reserva.pagado -= instance.monto
     instance.venta_reserva.actualizar_saldo()
 
-# Actualización automática del total y saldo pendiente cuando se añaden o eliminan productos, servicios y pagos
+# Actualización automática del total y saldo pendiente cuando se añaden o eliminan productos y servicios
 @receiver(post_save, sender=ReservaProducto)
 @receiver(post_delete, sender=ReservaProducto)
 def actualizar_total_reserva_producto(sender, instance, **kwargs):
@@ -135,3 +135,15 @@ def actualizar_total_reserva_producto(sender, instance, **kwargs):
 @receiver(post_delete, sender=ReservaServicio)
 def actualizar_total_reserva_servicio(sender, instance, **kwargs):
     instance.venta_reserva.calcular_total()
+
+@receiver(post_save, sender=ReservaProducto)
+def reducir_inventario_despues_de_venta(sender, instance, created, **kwargs):
+    """
+    Reducción del inventario una vez que el producto ha sido añadido a la reserva.
+    """
+    producto = instance.producto
+    cantidad = instance.cantidad
+
+    # Reducir inventario cuando se crea la reserva de producto
+    if created:
+        producto.reducir_inventario(cantidad)
