@@ -163,21 +163,14 @@ class Pago(models.Model):
         return f"Pago de {self.monto} para {self.venta_reserva}"
 
     def save(self, *args, **kwargs):
-        """ Al guardar un nuevo pago, se actualiza correctamente el monto pagado. """
-        if self.pk is None:
-            # El pago es nuevo, sumar su monto al total pagado de la venta
+        if self._state.adding:  # Solo sumar si es un nuevo pago
             self.venta_reserva.pagado += self.monto
         else:
-            # El pago está siendo actualizado, tomar en cuenta la diferencia con el monto anterior
-            pago_anterior = Pago.objects.get(pk=self.pk)
-            diferencia = self.monto - pago_anterior.monto
-            self.venta_reserva.pagado += diferencia
-
+            pass
         self.venta_reserva.actualizar_saldo()
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        """ Al eliminar un pago, restamos correctamente el monto del total pagado. """
         self.venta_reserva.pagado -= self.monto
         self.venta_reserva.actualizar_saldo()
         super().delete(*args, **kwargs)

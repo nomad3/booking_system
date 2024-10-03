@@ -155,6 +155,13 @@ def actualizar_total_reserva_servicio(sender, instance, **kwargs):
     instance.venta_reserva.calcular_total()
 
 @receiver(post_save, sender=Pago)
+def actualizar_saldo_agregar_pago(sender, instance, **kwargs):
+    # Si es un pago nuevo, sumar el monto al total pagado
+    instance.venta_reserva.pagado += instance.monto
+    instance.venta_reserva.actualizar_saldo()
+
 @receiver(post_delete, sender=Pago)
-def actualizar_saldo_pago(sender, instance, **kwargs):
+def actualizar_saldo_eliminar_pago(sender, instance, **kwargs):
+    # Si se elimina un pago, restar el monto del total pagado
+    instance.venta_reserva.pagado -= instance.monto
     instance.venta_reserva.actualizar_saldo()
