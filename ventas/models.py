@@ -145,7 +145,7 @@ class Pago(models.Model):
         ('webpay', 'WebPay'),
         ('descuento', 'Descuento'),
         ('giftcard', 'GiftCard'),
-        ('flow ', 'FLOW'),
+        ('flow', 'FLOW'),
         ('mercadopago', 'MercadoPago'),
         ('scotiabank', 'ScotiaBank'),
         ('bancoestado', 'BancoEstado'),
@@ -161,10 +161,22 @@ class Pago(models.Model):
         return f"Pago de {self.monto} para {self.venta_reserva}"
 
     def save(self, *args, **kwargs):
+        # Si el pago ya existe, restar el monto anterior para evitar duplicaciones
+        if self.pk:
+            pago_anterior = Pago.objects.get(pk=self.pk)
+            self.venta_reserva.pagado -= pago_anterior.monto
+
+        # Agregar el nuevo monto
         super().save(*args, **kwargs)
         self.venta_reserva.pagado += self.monto
         self.venta_reserva.actualizar_saldo()
 
+    def delete(self, *args, **kwargs):
+        # Antes de eliminar el pago, restamos el monto pagado
+        self.venta_reserva.pagado -= self.monto
+        self.venta_reserva.actualizar_saldo()
+        super().delete(*args, **kwargs)
+        
 class MovimientoCliente(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     tipo_movimiento = models.CharField(max_length=100)

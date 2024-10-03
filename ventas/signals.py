@@ -2,7 +2,6 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from .models import VentaReserva, Cliente, ReservaProducto, ReservaServicio, Pago, MovimientoCliente
 
-
 @receiver(post_save, sender=VentaReserva)
 def registrar_movimiento_venta(sender, instance, created, **kwargs):
     if created:
@@ -72,6 +71,22 @@ def registrar_movimiento_pago(sender, instance, created, **kwargs):
         )
 
 
+@receiver(post_delete, sender=Pago)
+def registrar_movimiento_eliminacion_pago(sender, instance, **kwargs):
+    tipo = 'Eliminación de Pago'
+    descripcion = f"Se ha eliminado el pago de {instance.monto} de la venta/reserva #{instance.venta_reserva.id}."
+
+    MovimientoCliente.objects.create(
+        cliente=instance.venta_reserva.cliente,
+        tipo_movimiento=tipo,
+        descripcion=descripcion
+    )
+
+    # Al eliminar un pago, se debe restar del total pagado y actualizar el saldo
+    instance.venta_reserva.pagado -= instance.monto
+    instance.venta_reserva.actualizar_saldo()
+
+
 @receiver(post_save, sender=ReservaProducto)
 def registrar_movimiento_reserva_producto(sender, instance, created, **kwargs):
     if created:
@@ -127,7 +142,8 @@ def registrar_movimiento_eliminacion_servicio(sender, instance, **kwargs):
         descripcion=descripcion
     )
 
-# Actualización automática del total y saldo pendiente cuando se añaden o eliminan productos y servicios
+
+# Actualización automática del total y saldo pendiente cuando se añaden o eliminan productos, servicios y pagos
 @receiver(post_save, sender=ReservaProducto)
 @receiver(post_delete, sender=ReservaProducto)
 def actualizar_total_reserva_producto(sender, instance, **kwargs):
@@ -139,5 +155,6 @@ def actualizar_total_reserva_servicio(sender, instance, **kwargs):
     instance.venta_reserva.calcular_total()
 
 @receiver(post_save, sender=Pago)
+@receiver(post_delete, sender=Pago)
 def actualizar_saldo_pago(sender, instance, **kwargs):
     instance.venta_reserva.actualizar_saldo()
