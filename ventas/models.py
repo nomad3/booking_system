@@ -161,22 +161,25 @@ class Pago(models.Model):
         return f"Pago de {self.monto} para {self.venta_reserva}"
 
     def save(self, *args, **kwargs):
-        # Si el pago ya existe, restar el monto anterior para evitar duplicaciones
-        if self.pk:
+        """ Al guardar un nuevo pago, se actualiza correctamente el monto pagado. """
+        if self.pk is None:
+            # El pago es nuevo, sumar su monto al total pagado de la venta
+            self.venta_reserva.pagado += self.monto
+        else:
+            # El pago está siendo actualizado, tomar en cuenta la diferencia con el monto anterior
             pago_anterior = Pago.objects.get(pk=self.pk)
-            self.venta_reserva.pagado -= pago_anterior.monto
+            diferencia = self.monto - pago_anterior.monto
+            self.venta_reserva.pagado += diferencia
 
-        # Agregar el nuevo monto
-        super().save(*args, **kwargs)
-        self.venta_reserva.pagado += self.monto
         self.venta_reserva.actualizar_saldo()
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        # Antes de eliminar el pago, restamos el monto pagado
+        """ Al eliminar un pago, restamos correctamente el monto del total pagado. """
         self.venta_reserva.pagado -= self.monto
         self.venta_reserva.actualizar_saldo()
         super().delete(*args, **kwargs)
-        
+
 class MovimientoCliente(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     tipo_movimiento = models.CharField(max_length=100)
