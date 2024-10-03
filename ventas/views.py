@@ -8,6 +8,7 @@ from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, Reserv
 from .utils import verificar_disponibilidad
 from django.utils.dateparse import parse_date
 from django.db.models import Q
+from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from .serializers import (
     ProveedorSerializer,
@@ -157,39 +158,41 @@ class VentaReservaViewSet(viewsets.ModelViewSet):
         productos = data.get('productos')
         servicios = data.get('servicios')
 
-        # Crear la venta/reserva
-        venta_reserva = VentaReserva.objects.create(cliente_id=cliente_id)
+        # Envolver en una transacción atómica
+        with transaction.atomic():
+            # Crear la venta/reserva
+            venta_reserva = VentaReserva.objects.create(cliente_id=cliente_id)
 
-        # Procesar los productos (sin lógica de reserva)
-        for producto_data in productos:
-            producto_id = producto_data.get('producto')
-            cantidad = producto_data.get('cantidad')
-            producto = Producto.objects.get(id=producto_id)
+            # Procesar los productos (sin lógica de reserva)
+            for producto_data in productos:
+                producto_id = producto_data.get('producto')
+                cantidad = producto_data.get('cantidad')
+                producto = Producto.objects.get(id=producto_id)
 
-            # Verificar si hay inventario suficiente
-            if producto.cantidad_disponible < cantidad:
-                raise ValidationError(f"No hay suficiente inventario para el producto {producto.nombre}.")
+                # Verificar si hay inventario suficiente
+                if producto.cantidad_disponible < cantidad:
+                    raise ValidationError(f"No hay suficiente inventario para el producto {producto.nombre}.")
 
-            # Reducir inventario y agregar producto a la reserva
-            producto.reducir_inventario(cantidad)
-            venta_reserva.agregar_producto(producto, cantidad)
+                # Reducir inventario y agregar producto a la reserva
+                producto.reducir_inventario(cantidad)
+                venta_reserva.agregar_producto(producto, cantidad)
 
-        # Procesar los servicios (con lógica de reserva)
-        for servicio_data in servicios:
-            servicio_id = servicio_data.get('servicio')
-            fecha_agendamiento = servicio_data.get('fecha_agendamiento')
-            servicio = Servicio.objects.get(id=servicio_id)
+            # Procesar los servicios (con lógica de reserva)
+            for servicio_data in servicios:
+                servicio_id = servicio_data.get('servicio')
+                fecha_agendamiento = servicio_data.get('fecha_agendamiento')
+                servicio = Servicio.objects.get(id=servicio_id)
 
-            # Verificar disponibilidad del servicio
-            if not verificar_disponibilidad(servicio, fecha_agendamiento, fecha_agendamiento + servicio.duracion):
-                raise ValidationError(f"El servicio {servicio.nombre} no está disponible en el horario solicitado.")
+                # Verificar disponibilidad del servicio
+                if not verificar_disponibilidad(servicio, fecha_agendamiento, fecha_agendamiento + servicio.duracion):
+                    raise ValidationError(f"El servicio {servicio.nombre} no está disponible en el horario solicitado.")
 
-            # Agregar el servicio a la reserva
-            venta_reserva.agregar_servicio(servicio, fecha_agendamiento)
+                # Agregar el servicio a la reserva
+                venta_reserva.agregar_servicio(servicio, fecha_agendamiento)
 
-        # Guardar la reserva y calcular el total
-        venta_reserva.calcular_total()
-        venta_reserva.save()
+            # Guardar la reserva y calcular el total
+            venta_reserva.calcular_total()
+            venta_reserva.save()
 
         # Serializar la respuesta con los datos actualizados
         serializer = self.get_serializer(venta_reserva)
