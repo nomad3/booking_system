@@ -83,6 +83,7 @@ class VentaReserva(models.Model):
         ],
         default='pendiente'
     )
+    numero_documento_fiscal = models.CharField(max_length=100, null=True, blank=True)  # Nuevo campo
     comentarios = models.TextField(null=True, blank=True)
 
     def __str__(self):
