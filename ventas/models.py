@@ -1,6 +1,9 @@
 
 from datetime import timedelta
 from django.db import models
+from django.db.models.signals import post_save, post_delete
+from .models import Pago, MovimientoCliente
+from django.dispatch import receiver
 from django.utils import timezone
 
 class Proveedor(models.Model):
@@ -168,12 +171,7 @@ class Pago(models.Model):
             self.venta_reserva.actualizar_saldo()
         super().save(*args, **kwargs)
 
-    def delete(self, *args, **kwargs):
-        # Restar el monto del pagado al eliminar el pago
-        self.venta_reserva.pagado -= self.monto
-        self.venta_reserva.actualizar_saldo()
-        super().delete(*args, **kwargs)
-
+    # Eliminar la lógica de `delete`, ya no será necesaria
 class MovimientoCliente(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     tipo_movimiento = models.CharField(max_length=100)

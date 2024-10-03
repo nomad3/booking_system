@@ -154,12 +154,17 @@ def actualizar_total_reserva_producto(sender, instance, **kwargs):
 def actualizar_total_reserva_servicio(sender, instance, **kwargs):
     instance.venta_reserva.calcular_total()
 
-# Auditoría de pagos (creación y eliminación)
+# Auditoría y actualización de montos para pagos (creación y eliminación)
 @receiver(post_save, sender=Pago)
-def registrar_movimiento_pago_creado(sender, instance, created, **kwargs):
+def actualizar_monto_y_registrar_movimiento_pago_creado(sender, instance, created, **kwargs):
     if created:
         tipo = 'Pago Realizado'
         descripcion = f"Se ha registrado un pago de {instance.monto} para la venta/reserva #{instance.venta_reserva.id} mediante {instance.metodo_pago}."
+
+        # Actualizar el saldo pendiente
+        instance.venta_reserva.pagado += instance.monto
+        instance.venta_reserva.actualizar_saldo()
+
     else:
         tipo = 'Pago Actualizado'
         descripcion = f"Se ha actualizado el pago de {instance.monto} para la venta/reserva #{instance.venta_reserva.id}."
@@ -171,9 +176,13 @@ def registrar_movimiento_pago_creado(sender, instance, created, **kwargs):
     )
 
 @receiver(post_delete, sender=Pago)
-def registrar_movimiento_pago_eliminado(sender, instance, **kwargs):
+def actualizar_monto_y_registrar_movimiento_pago_eliminado(sender, instance, **kwargs):
     tipo = 'Pago Eliminado'
     descripcion = f"Se ha eliminado el pago de {instance.monto} para la venta/reserva #{instance.venta_reserva.id}."
+
+    # Restar el pago eliminado y actualizar el saldo pendiente
+    instance.venta_reserva.pagado -= instance.monto
+    instance.venta_reserva.actualizar_saldo()
 
     MovimientoCliente.objects.create(
         cliente=instance.venta_reserva.cliente,
