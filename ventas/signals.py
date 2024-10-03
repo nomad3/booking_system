@@ -7,7 +7,7 @@ from .models import VentaReserva, Cliente, ReservaProducto, ReservaServicio, Pag
 @receiver(post_save, sender=VentaReserva)
 def registrar_movimiento_venta(sender, instance, created, **kwargs):
     tipo = 'Creación de Venta/Reserva' if created else 'Actualización de Venta/Reserva'
-    descripcion = f"Se ha {'creado' si created else 'actualizado'} la venta/reserva con ID {instance.id} para el cliente {instance.cliente.nombre}."
+    descripcion = f"Se ha {'creado' if created else 'actualizado'} la venta/reserva con ID {instance.id} para el cliente {instance.cliente.nombre}."
     
     MovimientoCliente.objects.create(
         cliente=instance.cliente,
@@ -29,11 +29,11 @@ def registrar_movimiento_eliminacion_venta(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Cliente)
 def registrar_movimiento_cliente(sender, instance, created, **kwargs):
-    descripcion = f"Se ha {'creado' si created else 'actualizado'} el cliente: {instance.nombre}."
+    descripcion = f"Se ha {'creado' if created else 'actualizado'} el cliente: {instance.nombre}."
     
     MovimientoCliente.objects.create(
         cliente=instance,
-        tipo_movimiento='Creación de Cliente' si created else 'Actualización de Cliente',
+        tipo_movimiento='Creación de Cliente' if created else 'Actualización de Cliente',
         descripcion=descripcion
     )
 
@@ -52,7 +52,7 @@ def registrar_movimiento_eliminacion_cliente(sender, instance, **kwargs):
 @receiver(post_save, sender=ReservaProducto)
 def registrar_movimiento_reserva_producto(sender, instance, created, **kwargs):
     tipo = 'Añadido Producto a Venta/Reserva' if created else 'Actualización de Producto en Venta/Reserva'
-    descripcion = f"Se ha {'añadido' si created else 'actualizado'} {instance.cantidad} x {instance.producto.nombre} en la venta/reserva #{instance.venta_reserva.id}."
+    descripcion = f"Se ha {'añadido' if created else 'actualizado'} {instance.cantidad} x {instance.producto.nombre} en la venta/reserva #{instance.venta_reserva.id}."
     
     MovimientoCliente.objects.create(
         cliente=instance.venta_reserva.cliente,
@@ -75,7 +75,7 @@ def registrar_movimiento_eliminacion_producto(sender, instance, **kwargs):
 @receiver(post_save, sender=ReservaServicio)
 def registrar_movimiento_reserva_servicio(sender, instance, created, **kwargs):
     tipo = 'Añadido Servicio a Venta/Reserva' if created else 'Actualización de Servicio en Venta/Reserva'
-    descripcion = f"Se ha {'reservado' si created else 'actualizado'} el servicio {instance.servicio.nombre} para el {instance.fecha_agendamiento} en la venta/reserva #{instance.venta_reserva.id}."
+    descripcion = f"Se ha {'reservado' if created else 'actualizado'} el servicio {instance.servicio.nombre} para el {instance.fecha_agendamiento} en la venta/reserva #{instance.venta_reserva.id}."
     
     MovimientoCliente.objects.create(
         cliente=instance.venta_reserva.cliente,
@@ -98,7 +98,7 @@ def registrar_movimiento_eliminacion_servicio(sender, instance, **kwargs):
 @receiver(post_save, sender=Pago)
 def registrar_movimiento_pago(sender, instance, created, **kwargs):
     tipo = 'Pago Realizado' if created else 'Actualización de Pago'
-    descripcion = f"Se ha {'registrado' si created else 'actualizado'} un pago de {instance.monto} para la venta/reserva #{instance.venta_reserva.id} mediante {instance.metodo_pago}."
+    descripcion = f"Se ha {'registrado' if created else 'actualizado'} un pago de {instance.monto} para la venta/reserva #{instance.venta_reserva.id} mediante {instance.metodo_pago}."
     
     MovimientoCliente.objects.create(
         cliente=instance.venta_reserva.cliente,

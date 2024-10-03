@@ -165,12 +165,9 @@ class Pago(models.Model):
         return f"Pago de {self.monto} para {self.venta_reserva}"
 
     def save(self, *args, **kwargs):
-        if not self.pk:  # Solo sumar si el pago es nuevo
-            self.venta_reserva.pagado += self.monto
-            self.venta_reserva.actualizar_saldo()
+        # Quitamos la lógica de sumar el pago aquí
         super().save(*args, **kwargs)
 
-    # Eliminar la lógica de `delete`, ya no será necesaria
 class MovimientoCliente(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     tipo_movimiento = models.CharField(max_length=100)
