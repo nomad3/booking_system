@@ -2,146 +2,130 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from .models import VentaReserva, Cliente, ReservaProducto, ReservaServicio, Pago, MovimientoCliente
 
+# Señales para la auditoría de ventas, pagos y clientes
+
 @receiver(post_save, sender=VentaReserva)
 def registrar_movimiento_venta(sender, instance, created, **kwargs):
-    if created:
-        tipo = 'Creación de Venta/Reserva'
-        descripcion = f"Se ha creado una nueva venta/reserva con ID {instance.id} para el cliente {instance.cliente.nombre}."
-    else:
-        tipo = 'Actualización de Venta/Reserva'
-        descripcion = f"Se ha actualizado la venta/reserva con ID {instance.id} para el cliente {instance.cliente.nombre}."
-
+    tipo = 'Creación de Venta/Reserva' if created else 'Actualización de Venta/Reserva'
+    descripcion = f"Se ha {'creado' if created else 'actualizado'} la venta/reserva con ID {instance.id} para el cliente {instance.cliente.nombre}."
+    
     MovimientoCliente.objects.create(
         cliente=instance.cliente,
         tipo_movimiento=tipo,
         descripcion=descripcion
     )
-
 
 @receiver(post_delete, sender=VentaReserva)
 def registrar_movimiento_eliminacion_venta(sender, instance, **kwargs):
-    tipo = 'Eliminación de Venta/Reserva'
     descripcion = f"Se ha eliminado la venta/reserva con ID {instance.id} del cliente {instance.cliente.nombre}."
-
+    
     MovimientoCliente.objects.create(
         cliente=instance.cliente,
-        tipo_movimiento=tipo,
+        tipo_movimiento='Eliminación de Venta/Reserva',
         descripcion=descripcion
     )
 
+# Clientes
 
 @receiver(post_save, sender=Cliente)
 def registrar_movimiento_cliente(sender, instance, created, **kwargs):
-    if created:
-        tipo = 'Creación de Cliente'
-        descripcion = f"Se ha creado un nuevo cliente: {instance.nombre}."
-    else:
-        tipo = 'Actualización de Cliente'
-        descripcion = f"Se ha actualizado la información del cliente: {instance.nombre}."
-
+    descripcion = f"Se ha {'creado' if created else 'actualizado'} el cliente: {instance.nombre}."
+    
     MovimientoCliente.objects.create(
         cliente=instance,
-        tipo_movimiento=tipo,
+        tipo_movimiento='Creación de Cliente' if created else 'Actualización de Cliente',
         descripcion=descripcion
     )
-
 
 @receiver(post_delete, sender=Cliente)
 def registrar_movimiento_eliminacion_cliente(sender, instance, **kwargs):
-    tipo = 'Eliminación de Cliente'
     descripcion = f"Se ha eliminado el cliente: {instance.nombre}."
-
+    
     MovimientoCliente.objects.create(
         cliente=instance,
-        tipo_movimiento=tipo,
+        tipo_movimiento='Eliminación de Cliente',
         descripcion=descripcion
     )
 
-
-@receiver(post_save, sender=Pago)
-def registrar_movimiento_pago(sender, instance, created, **kwargs):
-    if created:
-        tipo = 'Pago Realizado'
-        descripcion = f"Se ha registrado un pago de {instance.monto} para la venta/reserva #{instance.venta_reserva.id} mediante {instance.metodo_pago}."
-
-        MovimientoCliente.objects.create(
-            cliente=instance.venta_reserva.cliente,
-            tipo_movimiento=tipo,
-            descripcion=descripcion
-        )
-
-
-@receiver(post_delete, sender=Pago)
-def registrar_movimiento_eliminacion_pago(sender, instance, **kwargs):
-    tipo = 'Eliminación de Pago'
-    descripcion = f"Se ha eliminado el pago de {instance.monto} de la venta/reserva #{instance.venta_reserva.id}."
-
-    MovimientoCliente.objects.create(
-        cliente=instance.venta_reserva.cliente,
-        tipo_movimiento=tipo,
-        descripcion=descripcion
-    )
-
-    # Al eliminar un pago, se debe restar del total pagado y actualizar el saldo
-    instance.venta_reserva.pagado -= instance.monto
-    instance.venta_reserva.actualizar_saldo()
-
+# Productos
 
 @receiver(post_save, sender=ReservaProducto)
 def registrar_movimiento_reserva_producto(sender, instance, created, **kwargs):
-    if created:
-        tipo = 'Añadido Producto a Venta/Reserva'
-        descripcion = f"Se ha añadido {instance.cantidad} x {instance.producto.nombre} a la venta/reserva #{instance.venta_reserva.id}."
-    else:
-        tipo = 'Actualización de Producto en Venta/Reserva'
-        descripcion = f"Se ha actualizado {instance.cantidad} x {instance.producto.nombre} en la venta/reserva #{instance.venta_reserva.id}."
-
+    tipo = 'Añadido Producto a Venta/Reserva' if created else 'Actualización de Producto en Venta/Reserva'
+    descripcion = f"Se ha {'añadido' if created else 'actualizado'} {instance.cantidad} x {instance.producto.nombre} en la venta/reserva #{instance.venta_reserva.id}."
+    
     MovimientoCliente.objects.create(
         cliente=instance.venta_reserva.cliente,
         tipo_movimiento=tipo,
         descripcion=descripcion
     )
-
-
-@receiver(post_save, sender=ReservaServicio)
-def registrar_movimiento_reserva_servicio(sender, instance, created, **kwargs):
-    if created:
-        tipo = 'Añadido Servicio a Venta/Reserva'
-        descripcion = f"Se ha reservado el servicio {instance.servicio.nombre} para el {instance.fecha_agendamiento} en la venta/reserva #{instance.venta_reserva.id}."
-    else:
-        tipo = 'Actualización de Servicio en Venta/Reserva'
-        descripcion = f"Se ha actualizado la reserva del servicio {instance.servicio.nombre} para el {instance.fecha_agendamiento} en la venta/reserva #{instance.venta_reserva.id}."
-
-    MovimientoCliente.objects.create(
-        cliente=instance.venta_reserva.cliente,
-        tipo_movimiento=tipo,
-        descripcion=descripcion
-    )
-
 
 @receiver(post_delete, sender=ReservaProducto)
 def registrar_movimiento_eliminacion_producto(sender, instance, **kwargs):
-    tipo = 'Eliminación de Producto en Venta/Reserva'
     descripcion = f"Se ha eliminado {instance.cantidad} x {instance.producto.nombre} de la venta/reserva #{instance.venta_reserva.id}."
+    
+    MovimientoCliente.objects.create(
+        cliente=instance.venta_reserva.cliente,
+        tipo_movimiento='Eliminación de Producto en Venta/Reserva',
+        descripcion=descripcion
+    )
 
+# Servicios
+
+@receiver(post_save, sender=ReservaServicio)
+def registrar_movimiento_reserva_servicio(sender, instance, created, **kwargs):
+    tipo = 'Añadido Servicio a Venta/Reserva' if created else 'Actualización de Servicio en Venta/Reserva'
+    descripcion = f"Se ha {'reservado' if created else 'actualizado'} el servicio {instance.servicio.nombre} para el {instance.fecha_agendamiento} en la venta/reserva #{instance.venta_reserva.id}."
+    
     MovimientoCliente.objects.create(
         cliente=instance.venta_reserva.cliente,
         tipo_movimiento=tipo,
         descripcion=descripcion
     )
-
 
 @receiver(post_delete, sender=ReservaServicio)
 def registrar_movimiento_eliminacion_servicio(sender, instance, **kwargs):
-    tipo = 'Eliminación de Servicio en Venta/Reserva'
     descripcion = f"Se ha eliminado la reserva del servicio {instance.servicio.nombre} de la venta/reserva #{instance.venta_reserva.id}."
+    
+    MovimientoCliente.objects.create(
+        cliente=instance.venta_reserva.cliente,
+        tipo_movimiento='Eliminación de Servicio en Venta/Reserva',
+        descripcion=descripcion
+    )
 
+# Pagos
+
+@receiver(post_save, sender=Pago)
+def registrar_movimiento_pago(sender, instance, created, **kwargs):
+    tipo = 'Pago Realizado' if created else 'Actualización de Pago'
+    descripcion = f"Se ha {'registrado' if created else 'actualizado'} un pago de {instance.monto} para la venta/reserva #{instance.venta_reserva.id} mediante {instance.metodo_pago}."
+    
     MovimientoCliente.objects.create(
         cliente=instance.venta_reserva.cliente,
         tipo_movimiento=tipo,
         descripcion=descripcion
     )
 
+    # Actualizar el saldo de la venta después de un nuevo pago
+    if created:
+        instance.venta_reserva.pagado += instance.monto
+        instance.venta_reserva.actualizar_saldo()
+
+@receiver(post_delete, sender=Pago)
+def registrar_movimiento_eliminacion_pago(sender, instance, **kwargs):
+    descripcion = f"Se ha eliminado el pago de {instance.monto} de la venta/reserva #{instance.venta_reserva.id}."
+    
+    MovimientoCliente.objects.create(
+        cliente=instance.venta_reserva.cliente,
+        tipo_movimiento='Eliminación de Pago',
+        descripcion=descripcion
+    )
+
+    # Restar el pago eliminado y actualizar el saldo pendiente
+    instance.venta_reserva.pagado -= instance.monto
+    if instance.venta_reserva.pagado < 0:
+        instance.venta_reserva.pagado = 0  # Evitar valores negativos
+    instance.venta_reserva.actualizar_saldo()
 
 # Actualización automática del total y saldo pendiente cuando se añaden o eliminan productos, servicios y pagos
 @receiver(post_save, sender=ReservaProducto)
@@ -154,38 +138,9 @@ def actualizar_total_reserva_producto(sender, instance, **kwargs):
 def actualizar_total_reserva_servicio(sender, instance, **kwargs):
     instance.venta_reserva.calcular_total()
 
-# Auditoría y actualización de montos para pagos (creación y eliminación)
 @receiver(post_save, sender=Pago)
 def actualizar_monto_y_registrar_movimiento_pago_creado(sender, instance, created, **kwargs):
     if created:
-        tipo = 'Pago Realizado'
-        descripcion = f"Se ha registrado un pago de {instance.monto} para la venta/reserva #{instance.venta_reserva.id} mediante {instance.metodo_pago}."
-
         # Actualizar el saldo pendiente
         instance.venta_reserva.pagado += instance.monto
         instance.venta_reserva.actualizar_saldo()
-
-    else:
-        tipo = 'Pago Actualizado'
-        descripcion = f"Se ha actualizado el pago de {instance.monto} para la venta/reserva #{instance.venta_reserva.id}."
-
-    MovimientoCliente.objects.create(
-        cliente=instance.venta_reserva.cliente,
-        tipo_movimiento=tipo,
-        descripcion=descripcion
-    )
-
-@receiver(post_delete, sender=Pago)
-def actualizar_monto_y_registrar_movimiento_pago_eliminado(sender, instance, **kwargs):
-    tipo = 'Pago Eliminado'
-    descripcion = f"Se ha eliminado el pago de {instance.monto} para la venta/reserva #{instance.venta_reserva.id}."
-
-    # Restar el pago eliminado y actualizar el saldo pendiente
-    instance.venta_reserva.pagado -= instance.monto
-    instance.venta_reserva.actualizar_saldo()
-
-    MovimientoCliente.objects.create(
-        cliente=instance.venta_reserva.cliente,
-        tipo_movimiento=tipo,
-        descripcion=descripcion
-    )

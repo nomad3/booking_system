@@ -2,7 +2,6 @@
 from datetime import timedelta
 from django.db import models
 from django.db.models.signals import post_save, post_delete
-from .models import Pago, MovimientoCliente
 from django.dispatch import receiver
 from django.utils import timezone
 
