@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.shortcuts import render
 from datetime import datetime
 from django.utils import timezone
-from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio
+from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente  
 from .utils import verificar_disponibilidad
 from django.utils.dateparse import parse_date
 from django.db.models import Q
