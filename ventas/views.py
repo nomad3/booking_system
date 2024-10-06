@@ -271,3 +271,52 @@ def inicio_sistema_view(request):
     Vista que renderiza la página de inicio del sistema con enlaces a los recursos importantes.
     """
     return render(request, 'ventas/inicio_sistema.html')
+
+def auditoria_movimientos_view(request):
+    # Obtener parámetros de fecha de inicio y fin desde el formulario GET
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+
+    # Convertir las fechas desde cadenas a objetos datetime
+    if fecha_inicio:
+        fecha_inicio = parse_date(fecha_inicio)
+    if fecha_fin:
+        fecha_fin = parse_date(fecha_fin)
+
+    # Filtrar los movimientos por rango de fechas
+    movimientos = MovimientoCliente.objects.all()
+    
+    if fecha_inicio and fecha_fin:
+        movimientos = movimientos.filter(fecha__range=[fecha_inicio, fecha_fin])
+    elif fecha_inicio:
+        movimientos = movimientos.filter(fecha__gte=fecha_inicio)
+    elif fecha_fin:
+        movimientos = movimientos.filter(fecha__lte=fecha_fin)
+
+    # Pasar los movimientos y las fechas al contexto
+    context = {
+        'movimientos': movimientos,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+    }
+
+    return render(request, 'ventas/auditoria_movimientos.html', context)
+
+def caja_diaria_view(request):
+    # Obtener la fecha actual
+    hoy = timezone.now().date()
+
+    # Filtrar los pagos realizados hoy y agruparlos por método de pago
+    pagos_por_metodo = Pago.objects.filter(fecha_pago__date=hoy).values('metodo_pago').annotate(total=Sum('monto'))
+
+    # Calcular el total general del día
+    total_dia = pagos_por_metodo.aggregate(Sum('total'))['total__sum'] or 0
+
+    # Pasar los datos a la plantilla
+    context = {
+        'pagos_por_metodo': pagos_por_metodo,
+        'total_dia': total_dia,
+        'fecha': hoy,
+    }
+
+    return render(request, 'ventas/caja_diaria.html', context)
