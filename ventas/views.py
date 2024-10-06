@@ -273,19 +273,19 @@ def inicio_sistema_view(request):
     return render(request, 'ventas/inicio_sistema.html')
 
 def auditoria_movimientos_view(request):
-    # Obtener parámetros de fecha de inicio y fin desde el formulario GET
+    # Obtener los parámetros del filtro
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
-
-    # Convertir las fechas desde cadenas a objetos datetime
-    if fecha_inicio:
-        fecha_inicio = parse_date(fecha_inicio)
-    if fecha_fin:
-        fecha_fin = parse_date(fecha_fin)
-
-    # Filtrar los movimientos por rango de fechas
-    movimientos = MovimientoCliente.objects.all()
+    cliente_id = request.GET.get('cliente')
     
+    # Obtener todos los movimientos, pre-cargando datos del cliente para evitar múltiples queries
+    movimientos = MovimientoCliente.objects.select_related('cliente').all()
+
+    # Filtrar por cliente si se proporciona
+    if cliente_id:
+        movimientos = movimientos.filter(cliente_id=cliente_id)
+
+    # Filtrar por rango de fechas si se proporciona
     if fecha_inicio and fecha_fin:
         movimientos = movimientos.filter(fecha__range=[fecha_inicio, fecha_fin])
     elif fecha_inicio:
@@ -293,13 +293,15 @@ def auditoria_movimientos_view(request):
     elif fecha_fin:
         movimientos = movimientos.filter(fecha__lte=fecha_fin)
 
-    # Pasar los movimientos y las fechas al contexto
+    # Pasar los movimientos al contexto de la plantilla
     context = {
         'movimientos': movimientos,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
+        'cliente_id': cliente_id,
     }
-
+    
+    # Renderizar la plantilla con los datos
     return render(request, 'ventas/auditoria_movimientos.html', context)
 
 def caja_diaria_view(request):
