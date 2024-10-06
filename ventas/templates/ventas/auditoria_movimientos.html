@@ -15,6 +15,17 @@
           <label for="fecha_fin">Fecha Fin:</label>
           <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin|date:'Y-m-d' }}" class="vDateField">
         </div>
+        <div class="field-box">
+          <label for="tipo_movimiento">Tipo de Movimiento:</label>
+          <select id="tipo_movimiento" name="tipo_movimiento" class="vSelectField">
+            <option value="">Todos</option>
+            <option value="Creación de Venta" {% if tipo_movimiento == "Creación de Venta" %}selected{% endif %}>Creación de Venta</option>
+            <option value="Actualización de Venta" {% if tipo_movimiento == "Actualización de Venta" %}selected{% endif %}>Actualización de Venta</option>
+            <option value="Pago Realizado" {% if tipo_movimiento == "Pago Realizado" %}selected{% endif %}>Pago Realizado</option>
+            <option value="Eliminación de Venta" {% if tipo_movimiento == "Eliminación de Venta" %}selected{% endif %}>Eliminación de Venta</option>
+            <!-- Agrega más tipos de movimientos si los tienes -->
+          </select>
+        </div>
       </div>
       <button type="submit" class="btn btn-primary">Filtrar</button>
     </form>

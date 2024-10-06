@@ -272,13 +272,15 @@ def inicio_sistema_view(request):
     """
     return render(request, 'ventas/inicio_sistema.html')
 
+
 def auditoria_movimientos_view(request):
     # Obtener los parámetros del filtro
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
     cliente_id = request.GET.get('cliente')
+    tipo_movimiento = request.GET.get('tipo_movimiento')
     
-    # Obtener todos los movimientos, pre-cargando datos del cliente para evitar múltiples queries
+    # Obtener todos los movimientos, pre-cargando datos del cliente
     movimientos = MovimientoCliente.objects.select_related('cliente').all()
 
     # Filtrar por cliente si se proporciona
@@ -293,14 +295,19 @@ def auditoria_movimientos_view(request):
     elif fecha_fin:
         movimientos = movimientos.filter(fecha__lte=fecha_fin)
 
+    # Filtrar por tipo de movimiento si se proporciona
+    if tipo_movimiento:
+        movimientos = movimientos.filter(tipo_movimiento=tipo_movimiento)
+
     # Pasar los movimientos al contexto de la plantilla
     context = {
         'movimientos': movimientos,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         'cliente_id': cliente_id,
+        'tipo_movimiento': tipo_movimiento,  # Añadir este campo al contexto
     }
-    
+
     # Renderizar la plantilla con los datos
     return render(request, 'ventas/auditoria_movimientos.html', context)
 
