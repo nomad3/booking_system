@@ -21,7 +21,7 @@ class CategoriaProducto(models.Model):
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=100)
-    precio_base = models.DecimalField(max_digits=10, decimal_places=2)
+    precio_base = models.DecimalField(max_digits=10, decimal_places=0)
     cantidad_disponible = models.PositiveIntegerField()
     proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True)
     categoria = models.ForeignKey(CategoriaProducto, on_delete=models.SET_NULL, null=True)
@@ -45,7 +45,7 @@ class CategoriaServicio(models.Model):
 
 class Servicio(models.Model):
     nombre = models.CharField(max_length=100)
-    precio_base = models.DecimalField(max_digits=10, decimal_places=2)
+    precio_base = models.DecimalField(max_digits=10, decimal_places=0)
     duracion = models.DurationField(default=timedelta(hours=2))
     categoria = models.ForeignKey(CategoriaServicio, on_delete=models.SET_NULL, null=True)
     proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True)
@@ -70,9 +70,9 @@ class VentaReserva(models.Model):
     servicios = models.ManyToManyField(Servicio, through='ReservaServicio')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_reserva = models.DateTimeField(null=True, blank=True)
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    saldo_pendiente = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+    pagado = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+    saldo_pendiente = models.DecimalField(max_digits=10, decimal_places=0, default=0)
     estado = models.CharField(
         max_length=20,
         choices=[
@@ -159,7 +159,7 @@ class Pago(models.Model):
 
     venta_reserva = models.ForeignKey(VentaReserva, related_name='pagos', on_delete=models.CASCADE)
     fecha_pago = models.DateTimeField(default=timezone.now)
-    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    monto = models.DecimalField(max_digits=10, decimal_places=0)
     metodo_pago = models.CharField(max_length=100, choices=METODOS_PAGO)
 
     def __str__(self):

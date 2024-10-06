@@ -4,8 +4,14 @@ from django.forms import DateTimeInput
 from datetime import datetime
 from django.utils.timezone import make_aware
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 from django.forms import DateInput, TimeInput, Select
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio
+
+# Personalización del título de la administración
+admin.site.site_header = _("Sistema de Gestión de Ventas")
+admin.site.site_title = _("Panel de Administración")
+admin.site.index_title = _("Bienvenido al Panel de Control")
 
 # Formulario personalizado para elegir los slots de horas según el servicio
 class ReservaServicioInlineForm(forms.ModelForm):
