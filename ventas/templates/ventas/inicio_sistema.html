@@ -1,119 +1,67 @@
 {% extends "admin/base_site.html" %}
 
 {% block content %}
-  <style>
-    /* Estilos para centrar el contenido */
-    .center-content {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      text-align: center;
-      padding: 20px;
-    }
-    
-    .module {
-      width: 80%; /* Ajusta el ancho de la caja para hacerlo más uniforme */
-      margin: 0 auto;
-    }
-
-    .row {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 20px;
-    }
-
-    .col-md-6 {
-      flex: 1;
-      margin: 10px;
-    }
-
-    h2 {
-      margin-top: 10px;
-      font-size: 1.5em;
-    }
-
-    ul.object-tools {
-      list-style: none;
-      padding: 0;
-    }
-
-    ul.object-tools li {
-      margin: 5px 0;
-    }
-
-    ul.object-tools a {
-      text-decoration: none;
-      background-color: #007bff;
-      color: white;
-      padding: 10px 15px;
-      border-radius: 5px;
-      display: inline-block;
-    }
-
-    ul.object-tools a:hover {
-      background-color: #0056b3;
-    }
-  </style>
-
-  <div class="module center-content">
+  <div class="container" style="text-align: center; margin-top: 50px;">
     <h1>Inicio del Sistema</h1>
     <p>Bienvenido al sistema de gestión de ventas. Aquí puedes acceder a las principales funcionalidades:</p>
 
+    <!-- Primera fila -->
     <div class="row">
       <div class="col-md-6">
         <h2>Gestión de Ventas y Reservas</h2>
-        <ul class="object-tools">
-          <li><a href="{% url 'admin:ventas_ventareserva_add' %}" class="addlink">Agregar Venta/Reserva</a></li>
-          <li><a href="{% url 'admin:ventas_ventareserva_changelist' %}" class="changelist">Ver Ventas/Reservas</a></li>
-          <li><a href="{% url 'caja_diaria' %}" class="changelist">Cuadre de Caja Diario</a></li>
-          <li><a href="{% url 'auditoria_movimientos' %}" class="changelist">Auditoría de Movimientos</a></li>
+        <ul class="list-unstyled">
+          <li><a href="{% url 'admin:ventas_ventareserva_add' %}" class="btn btn-primary btn-block">Agregar Venta/Reserva</a></li>
+          <li><a href="{% url 'admin:ventas_ventareserva_changelist' %}" class="btn btn-secondary btn-block">Ver Ventas/Reservas</a></li>
+          <li><a href="{% url 'caja_diaria' %}" class="btn btn-secondary btn-block">Cuadre de Caja Diario</a></li>
+          <li><a href="{% url 'auditoria_movimientos' %}" class="btn btn-secondary btn-block">Auditoría de Movimientos</a></li>
         </ul>
       </div>
 
       <div class="col-md-6">
         <h2>Gestión de Clientes</h2>
-        <ul class="object-tools">
-          <li><a href="{% url 'admin:ventas_cliente_add' %}" class="addlink">Agregar Cliente</a></li>
-          <li><a href="{% url 'admin:ventas_cliente_changelist' %}" class="changelist">Ver Clientes</a></li>
+        <ul class="list-unstyled">
+          <li><a href="{% url 'admin:ventas_cliente_add' %}" class="btn btn-primary btn-block">Agregar Cliente</a></li>
+          <li><a href="{% url 'admin:ventas_cliente_changelist' %}" class="btn btn-secondary btn-block">Ver Clientes</a></li>
         </ul>
       </div>
     </div>
 
-    <div class="row">
+    <!-- Segunda fila -->
+    <div class="row" style="margin-top: 30px;">
       <div class="col-md-6">
         <h2>Gestión de Productos</h2>
-        <ul class="object-tools">
-          <li><a href="{% url 'admin:ventas_producto_add' %}" class="addlink">Agregar Producto</a></li>
-          <li><a href="{% url 'admin:ventas_producto_changelist' %}" class="changelist">Ver Productos</a></li>
-          <li><a href="{% url 'admin:ventas_categoriaproducto_changelist' %}" class="changelist">Categorías de Productos</a></li>
+        <ul class="list-unstyled">
+          <li><a href="{% url 'admin:ventas_producto_add' %}" class="btn btn-primary btn-block">Agregar Producto</a></li>
+          <li><a href="{% url 'admin:ventas_producto_changelist' %}" class="btn btn-secondary btn-block">Ver Productos</a></li>
+          <li><a href="{% url 'admin:ventas_categoriaproducto_changelist' %}" class="btn btn-secondary btn-block">Categorías de Productos</a></li>
         </ul>
       </div>
 
       <div class="col-md-6">
         <h2>Gestión de Servicios</h2>
-        <ul class="object-tools">
-          <li><a href="{% url 'admin:ventas_servicio_add' %}" class="addlink">Agregar Servicio</a></li>
-          <li><a href="{% url 'admin:ventas_servicio_changelist' %}" class="changelist">Ver Servicios</a></li>
-          <li><a href="{% url 'admin:ventas_categoriaservicio_changelist' %}" class="changelist">Categorías de Servicios</a></li>
+        <ul class="list-unstyled">
+          <li><a href="{% url 'admin:ventas_servicio_add' %}" class="btn btn-primary btn-block">Agregar Servicio</a></li>
+          <li><a href="{% url 'admin:ventas_servicio_changelist' %}" class="btn btn-secondary btn-block">Ver Servicios</a></li>
+          <li><a href="{% url 'admin:ventas_categoriaservicio_changelist' %}" class="btn btn-secondary btn-block">Categorías de Servicios</a></li>
         </ul>
       </div>
     </div>
 
-    <div class="row">
+    <!-- Tercera fila -->
+    <div class="row" style="margin-top: 30px;">
       <div class="col-md-6">
         <h2>Gestión de Pagos</h2>
-        <ul class="object-tools">
-          <li><a href="{% url 'admin:ventas_pago_add' %}" class="addlink">Registrar Pago</a></li>
-          <li><a href="{% url 'admin:ventas_pago_changelist' %}" class="changelist">Ver Pagos</a></li>
+        <ul class="list-unstyled">
+          <li><a href="{% url 'admin:ventas_pago_add' %}" class="btn btn-primary btn-block">Registrar Pago</a></li>
+          <li><a href="{% url 'admin:ventas_pago_changelist' %}" class="btn btn-secondary btn-block">Ver Pagos</a></li>
         </ul>
       </div>
 
       <div class="col-md-6">
         <h2>Gestión de Proveedores</h2>
-        <ul class="object-tools">
-          <li><a href="{% url 'admin:ventas_proveedor_add' %}" class="addlink">Agregar Proveedor</a></li>
-          <li><a href="{% url 'admin:ventas_proveedor_changelist' %}" class="changelist">Ver Proveedores</a></li>
+        <ul class="list-unstyled">
+          <li><a href="{% url 'admin:ventas_proveedor_add' %}" class="btn btn-primary btn-block">Agregar Proveedor</a></li>
+          <li><a href="{% url 'admin:ventas_proveedor_changelist' %}" class="btn btn-secondary btn-block">Ver Proveedores</a></li>
         </ul>
       </div>
     </div>
