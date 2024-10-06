@@ -7,7 +7,7 @@ from django.utils import timezone
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente  
 from .utils import verificar_disponibilidad
 from django.utils.dateparse import parse_date
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from .serializers import (
