@@ -1,14 +1,16 @@
 {% extends "admin/base_site.html" %}
 
 {% block content %}
-  <div class="container" style="text-align: center; margin-top: 50px;">
-    <h1>Inicio del Sistema</h1>
-    <p>Bienvenido al sistema de gestión de ventas. Aquí puedes acceder a las principales funcionalidades:</p>
+
+  <div class="container" style="margin-top: 50px;">
+    <!-- Título centrado -->
+    <h1 class="text-center">Inicio del Sistema</h1>
+    <p class="text-center">Bienvenido al sistema de gestión de ventas. Aquí puedes acceder a las principales funcionalidades:</p>
 
     <!-- Primera fila -->
     <div class="row justify-content-center">
       <div class="col-lg-6 col-md-6 col-sm-12 my-3">
-        <h2>Gestión de Ventas y Reservas</h2>
+        <h2 class="text-center">Gestión de Ventas y Reservas</h2>
         <div class="d-grid gap-2">
           <a href="{% url 'admin:ventas_ventareserva_add' %}" class="btn btn-primary btn-block my-2">Agregar Venta/Reserva</a>
           <a href="{% url 'admin:ventas_ventareserva_changelist' %}" class="btn btn-secondary btn-block my-2">Ver Ventas/Reservas</a>
@@ -19,7 +21,7 @@
       </div>
 
       <div class="col-lg-6 col-md-6 col-sm-12 my-3">
-        <h2>Gestión de Clientes</h2>
+        <h2 class="text-center">Gestión de Clientes</h2>
         <div class="d-grid gap-2">
           <a href="{% url 'admin:ventas_cliente_add' %}" class="btn btn-primary btn-block my-2">Agregar Cliente</a>
           <a href="{% url 'admin:ventas_cliente_changelist' %}" class="btn btn-secondary btn-block my-2">Ver Clientes</a>
@@ -30,7 +32,7 @@
     <!-- Segunda fila -->
     <div class="row justify-content-center">
       <div class="col-lg-6 col-md-6 col-sm-12 my-3">
-        <h2>Gestión de Productos</h2>
+        <h2 class="text-center">Gestión de Productos</h2>
         <div class="d-grid gap-2">
           <a href="{% url 'admin:ventas_producto_add' %}" class="btn btn-primary btn-block my-2">Agregar Producto</a>
           <a href="{% url 'admin:ventas_producto_changelist' %}" class="btn btn-secondary btn-block my-2">Ver Productos</a>
@@ -39,7 +41,7 @@
       </div>
 
       <div class="col-lg-6 col-md-6 col-sm-12 my-3">
-        <h2>Gestión de Servicios</h2>
+        <h2 class="text-center">Gestión de Servicios</h2>
         <div class="d-grid gap-2">
           <a href="{% url 'admin:ventas_servicio_add' %}" class="btn btn-primary btn-block my-2">Agregar Servicio</a>
           <a href="{% url 'admin:ventas_servicio_changelist' %}" class="btn btn-secondary btn-block my-2">Ver Servicios</a>
@@ -51,7 +53,7 @@
     <!-- Tercera fila -->
     <div class="row justify-content-center">
       <div class="col-lg-6 col-md-6 col-sm-12 my-3">
-        <h2>Gestión de Pagos</h2>
+        <h2 class="text-center">Gestión de Pagos</h2>
         <div class="d-grid gap-2">
           <a href="{% url 'admin:ventas_pago_add' %}" class="btn btn-primary btn-block my-2">Registrar Pago</a>
           <a href="{% url 'admin:ventas_pago_changelist' %}" class="btn btn-secondary btn-block my-2">Ver Pagos</a>
@@ -59,7 +61,7 @@
       </div>
 
       <div class="col-lg-6 col-md-6 col-sm-12 my-3">
-        <h2>Gestión de Proveedores</h2>
+        <h2 class="text-center">Gestión de Proveedores</h2>
         <div class="d-grid gap-2">
           <a href="{% url 'admin:ventas_proveedor_add' %}" class="btn btn-primary btn-block my-2">Agregar Proveedor</a>
           <a href="{% url 'admin:ventas_proveedor_changelist' %}" class="btn btn-secondary btn-block my-2">Ver Proveedores</a>
