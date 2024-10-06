@@ -10,5 +10,4 @@ urlpatterns = [
     path('servicios-vendidos/', servicios_vendidos_view, name='servicios_vendidos'),
     path('caja-diaria/', caja_diaria_view, name='caja_diaria'),  # Nueva vista de caja diaria
     path('auditoria-movimientos/', auditoria_movimientos_view, name='auditoria_movimientos'),  # Nueva vista de auditoría
-    path('', include(router.urls)),  # Mantener las rutas del router
 ]
