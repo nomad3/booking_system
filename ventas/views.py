@@ -265,3 +265,9 @@ class PagoViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(pago)
         return Response(serializer.data)
+
+def inicio_sistema_view(request):
+    """
+    Vista que renderiza la página de inicio del sistema con enlaces a los recursos importantes.
+    """
+    return render(request, 'ventas/inicio_sistema.html')
