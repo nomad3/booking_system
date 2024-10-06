@@ -3,7 +3,9 @@ from django.urls import path, include
 from ventas.views import servicios_vendidos_view  
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('servicios-vendidos/', servicios_vendidos_view, name='servicios_vendidos'),  # Asegúrate de que esté aquí
-    path('api/', include('ventas.urls')),  # Incluye las rutas de la aplicación ventas
+    path('', inicio_sistema_view, name='inicio_sistema'),  # Nueva vista de inicio
+    path('servicios-vendidos/', servicios_vendidos_view, name='servicios_vendidos'),
+    path('caja-diaria/', caja_diaria_view, name='caja_diaria'),  # Nueva vista de caja diaria
+    path('auditoria-movimientos/', auditoria_movimientos_view, name='auditoria_movimientos'),  # Nueva vista de auditoría
+    path('', include(router.urls)),  # Mantener las rutas del router
 ]
