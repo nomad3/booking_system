@@ -2,11 +2,11 @@ from django.contrib import admin
 from django import forms
 from django.forms import DateTimeInput
 from datetime import datetime
-from django.utils.timezone import make_aware
+from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.forms import DateInput, TimeInput, Select
-from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio
+from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente
 
 # Personalización del título de la administración
 admin.site.site_header = _("Sistema de Gestión de Ventas")
@@ -34,7 +34,7 @@ class ReservaServicioInlineForm(forms.ModelForm):
                 raise forms.ValidationError("El formato de la fecha de agendamiento no es válido. Debe ser YYYY-MM-DD HH:MM.")
 
         return fecha_agendamiento
-    
+
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
     form = ReservaServicioInlineForm
@@ -48,6 +48,14 @@ class PagoInline(admin.TabularInline):
     model = Pago
     extra = 1
 
+# Método para registrar movimientos en el sistema
+def registrar_movimiento(cliente, tipo_movimiento, descripcion, usuario):
+    MovimientoCliente.objects.create(
+        cliente=cliente,
+        tipo_movimiento=tipo_movimiento,
+        descripcion=descripcion,
+        usuario=usuario
+    )
 
 class VentaReservaAdmin(admin.ModelAdmin):
     list_display = ('id', 'cliente', 'fecha_reserva', 'estado', 'total', 'pagado', 'saldo_pendiente')
@@ -56,29 +64,54 @@ class VentaReservaAdmin(admin.ModelAdmin):
     list_filter = ('cliente', 'servicios', 'fecha_reserva', 'estado')
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
 
+    def save_model(self, request, obj, form, change):
+        if change:
+            tipo = "Actualización de Venta/Reserva"
+            descripcion = f"Se ha actualizado la venta/reserva con ID {obj.id} para el cliente {obj.cliente.nombre}."
+        else:
+            tipo = "Creación de Venta/Reserva"
+            descripcion = f"Se ha creado una nueva venta/reserva con ID {obj.id} para el cliente {obj.cliente.nombre}."
+        super().save_model(request, obj, form, change)
+        registrar_movimiento(obj.cliente, tipo, descripcion, request.user)
+
+    def delete_model(self, request, obj):
+        descripcion = f"Se ha eliminado la venta/reserva con ID {obj.id} del cliente {obj.cliente.nombre}."
+        registrar_movimiento(obj.cliente, "Eliminación de Venta/Reserva", descripcion, request.user)
+        super().delete_model(request, obj)
+
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
-
 
 class CategoriaProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre',)
 
-
 class ProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio_base', 'cantidad_disponible', 'categoria', 'proveedor')
-
 
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'email', 'telefono')
 
-
 class ServicioAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio_base', 'duracion', 'categoria', 'proveedor')
-
 
 @admin.register(Pago)
 class PagoAdmin(admin.ModelAdmin):
     list_display = ('venta_reserva', 'monto', 'metodo_pago', 'fecha_pago')
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            tipo = "Actualización de Pago"
+            descripcion = f"Se ha actualizado el pago de {obj.monto} para la venta/reserva #{obj.venta_reserva.id}."
+        else:
+            tipo = "Registro de Pago"
+            descripcion = f"Se ha registrado un nuevo pago de {obj.monto} para la venta/reserva #{obj.venta_reserva.id}."
+        super().save_model(request, obj, form, change)
+        registrar_movimiento(obj.venta_reserva.cliente, tipo, descripcion, request.user)
+
+    def delete_model(self, request, obj):
+        descripcion = f"Se ha eliminado el pago de {obj.monto} de la venta/reserva #{obj.venta_reserva.id}."
+        registrar_movimiento(obj.venta_reserva.cliente, "Eliminación de Pago", descripcion, request.user)
+        super().delete_model(request, obj)
 
 admin.site.register(Proveedor, ProveedorAdmin)
 admin.site.register(CategoriaProducto, CategoriaProductoAdmin)

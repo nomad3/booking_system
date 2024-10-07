@@ -31,30 +31,30 @@
 
     <!-- Tabla de movimientos -->
     <table class="table table-striped table-bordered">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Cliente</th>
-          <th>Usuario</th>
-          <th>Tipo Movimiento</th>
-          <th>Descripción</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for movimiento in movimientos %}
-        <tr>
-          <td>{{ movimiento.fecha_movimiento|date:"d/m/Y H:i" }}</td>
-          <td>{{ movimiento.cliente.nombre }}</td>
-          <td>{{ movimiento.usuario.username }}</td>
-          <td>{{ movimiento.tipo_movimiento }}</td>
-          <td>{{ movimiento.descripcion }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="5">No se encontraron movimientos en el rango de fechas seleccionado.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>Tipo Movimiento</th>
+                <th>Descripción</th>
+                <th>Usuario</th>  <!-- Añadir columna de usuario -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for movimiento in movimientos %}
+            <tr>
+                <td>{{ movimiento.fecha_movimiento|date:"d/m/Y H:i" }}</td>
+                <td>{{ movimiento.cliente.nombre }}</td>
+                <td>{{ movimiento.tipo_movimiento }}</td>
+                <td>{{ movimiento.descripcion }}</td>
+                <td>{{ movimiento.usuario.username }}</td> <!-- Mostrar el nombre del usuario -->
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No se encontraron movimientos en el rango de fechas seleccionado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
   </div>
 {% endblock %}
