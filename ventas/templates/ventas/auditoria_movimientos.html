@@ -19,14 +19,11 @@
         </div>
         <div class="field-box">
           <label for="tipo_movimiento">Tipo de Movimiento:</label>
-          <select id="tipo_movimiento" name="tipo_movimiento" class="vSelectField">
-            <option value="">Todos</option>
-            <option value="Creación de Venta" {% if tipo_movimiento == "Creación de Venta" %}selected{% endif %}>Creación de Venta</option>
-            <option value="Actualización de Venta" {% if tipo_movimiento == "Actualización de Venta" %}selected{% endif %}>Actualización de Venta</option>
-            <option value="Pago Realizado" {% if tipo_movimiento == "Pago Realizado" %}selected{% endif %}>Pago Realizado</option>
-            <option value="Eliminación de Venta" {% if tipo_movimiento == "Eliminación de Venta" %}selected{% endif %}>Eliminación de Venta</option>
-            <!-- Agrega más tipos de movimientos si los tienes -->
-          </select>
+          <input type="text" id="tipo_movimiento" name="tipo_movimiento" value="{{ tipo_movimiento }}" class="vTextField">
+        </div>
+        <div class="field-box">
+          <label for="usuario">Usuario:</label>
+          <input type="text" id="usuario" name="usuario" value="{{ usuario_id }}" class="vTextField">
         </div>
       </div>
       <button type="submit" class="btn btn-primary">Filtrar</button>
@@ -34,28 +31,30 @@
 
     <!-- Tabla de movimientos -->
     <table class="table table-striped table-bordered">
-        <thead>
-            <tr>
-                <th>Fecha</th>
-                <th>Cliente</th>
-                <th>Tipo Movimiento</th>
-                <th>Descripción</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for movimiento in movimientos %}
-            <tr>
-                <td>{{ movimiento.fecha|date:"d/m/Y H:i" }}</td>
-                <td>{{ movimiento.cliente.nombre }}</td>
-                <td>{{ movimiento.tipo_movimiento }}</td>
-                <td>{{ movimiento.descripcion }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4">No se encontraron movimientos en el rango de fechas seleccionado.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Usuario</th>
+          <th>Tipo Movimiento</th>
+          <th>Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for movimiento in movimientos %}
+        <tr>
+          <td>{{ movimiento.fecha_movimiento|date:"d/m/Y H:i" }}</td>
+          <td>{{ movimiento.cliente.nombre }}</td>
+          <td>{{ movimiento.usuario.username }}</td>
+          <td>{{ movimiento.tipo_movimiento }}</td>
+          <td>{{ movimiento.descripcion }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">No se encontraron movimientos en el rango de fechas seleccionado.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
   </div>
 {% endblock %}

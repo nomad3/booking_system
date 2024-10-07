@@ -3,6 +3,7 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from django.shortcuts import render
 from datetime import datetime
+from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente  
 from .utils import verificar_disponibilidad
@@ -273,15 +274,17 @@ def inicio_sistema_view(request):
     return render(request, 'ventas/inicio_sistema.html')
 
 
+@login_required
 def auditoria_movimientos_view(request):
     # Obtener los parámetros del filtro
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
     cliente_id = request.GET.get('cliente')
     tipo_movimiento = request.GET.get('tipo_movimiento')
-    
-    # Obtener todos los movimientos, pre-cargando datos del cliente
-    movimientos = MovimientoCliente.objects.select_related('cliente').all()
+    usuario_id = request.GET.get('usuario')
+
+    # Obtener todos los movimientos, pre-cargando datos del cliente y usuario
+    movimientos = MovimientoCliente.objects.select_related('cliente', 'usuario').all()
 
     # Filtrar por cliente si se proporciona
     if cliente_id:
@@ -289,15 +292,19 @@ def auditoria_movimientos_view(request):
 
     # Filtrar por rango de fechas si se proporciona
     if fecha_inicio and fecha_fin:
-        movimientos = movimientos.filter(fecha__range=[fecha_inicio, fecha_fin])
+        movimientos = movimientos.filter(fecha_movimiento__range=[fecha_inicio, fecha_fin])
     elif fecha_inicio:
-        movimientos = movimientos.filter(fecha__gte=fecha_inicio)
+        movimientos = movimientos.filter(fecha_movimiento__gte=fecha_inicio)
     elif fecha_fin:
-        movimientos = movimientos.filter(fecha__lte=fecha_fin)
+        movimientos = movimientos.filter(fecha_movimiento__lte=fecha_fin)
 
     # Filtrar por tipo de movimiento si se proporciona
     if tipo_movimiento:
         movimientos = movimientos.filter(tipo_movimiento=tipo_movimiento)
+
+    # Filtrar por usuario si se proporciona
+    if usuario_id:
+        movimientos = movimientos.filter(usuario_id=usuario_id)
 
     # Pasar los movimientos al contexto de la plantilla
     context = {
@@ -305,7 +312,8 @@ def auditoria_movimientos_view(request):
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         'cliente_id': cliente_id,
-        'tipo_movimiento': tipo_movimiento,  # Añadir este campo al contexto
+        'tipo_movimiento': tipo_movimiento,
+        'usuario_id': usuario_id,
     }
 
     # Renderizar la plantilla con los datos
