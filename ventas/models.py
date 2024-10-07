@@ -1,5 +1,6 @@
 
 from datetime import timedelta
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
@@ -173,10 +174,8 @@ class MovimientoCliente(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     tipo_movimiento = models.CharField(max_length=100)
     descripcion = models.TextField()
-    fecha_movimiento = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Movimiento de {self.cliente} - {self.tipo_movimiento}"
+    fecha_movimiento = models.DateTimeField(auto_now_add=True)  
+    usuario = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
 class ReservaProducto(models.Model):
     venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaprodutos')
