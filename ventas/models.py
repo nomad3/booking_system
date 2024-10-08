@@ -58,9 +58,9 @@ class Cliente(models.Model):
     nombre = models.CharField(max_length=100)
     email = models.EmailField()
     telefono = models.CharField(max_length=20)
-    documento_identidad = models.CharField(max_length=20, null=True, blank=True, verbose_name="ID/DNI/Passport/RUT")  # Nuevo campo para el documento
-    pais = models.CharField(max_length=100, null=True, blank=True)  # Nuevo campo País
-    ciudad = models.CharField(max_length=100, null=True, blank=True)  # Nuevo campo Ciudad
+    documento_identidad = models.CharField(max_length=20, null=True, blank=True, verbose_name="ID/DNI/Passport/RUT")
+    pais = models.CharField(max_length=100, null=True, blank=True)
+    ciudad = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.nombre
@@ -84,7 +84,7 @@ class VentaReserva(models.Model):
         ],
         default='pendiente'
     )
-    numero_documento_fiscal = models.CharField(max_length=100, null=True, blank=True)  # Nuevo campo
+    numero_documento_fiscal = models.CharField(max_length=100, null=True, blank=True)
     comentarios = models.TextField(null=True, blank=True)
 
     def __str__(self):
@@ -96,9 +96,9 @@ class VentaReserva(models.Model):
         for reserva_producto in self.reservaprodutos.all():
             total += reserva_producto.producto.precio_base * reserva_producto.cantidad
 
-        # Sumar los servicios, multiplicando por la cantidad de personas
+        # Sumar los servicios, usando el método `calcular_precio` de `ReservaServicio`
         for reserva_servicio in self.reservaservicios.all():
-            total += reserva_servicio.servicio.precio_base * reserva_servicio.cantidad_personas
+            total += reserva_servicio.calcular_precio()
 
         self.total = total
         self.saldo_pendiente = total - self.pagado
@@ -132,13 +132,19 @@ class VentaReserva(models.Model):
         self.actualizar_saldo()
 
     def agregar_servicio(self, servicio, fecha_agendamiento, cantidad_personas=1):
-        """
-        Agrega un servicio a la reserva, especificando la fecha de agendamiento y la cantidad de personas.
-        """
+        duracion_servicio = servicio.duracion
+        fecha_fin = fecha_agendamiento + duracion_servicio
+
+        if ReservaServicio.objects.filter(servicio=servicio).filter(
+            fecha_agendamiento__lt=fecha_fin,
+            fecha_agendamiento__gte=fecha_agendamiento - timedelta(hours=duracion_servicio.total_seconds() / 3600)
+        ).exists():
+            raise ValidationError(f"El servicio {servicio.nombre} ya está reservado entre {fecha_agendamiento} y {fecha_fin}. Por favor, elige otro horario.")
+        
         # Añadimos el servicio usando el modelo intermedio ReservaServicio
         self.servicios.add(servicio, through_defaults={
             'fecha_agendamiento': fecha_agendamiento,
-            'cantidad_personas': cantidad_personas  # Registrar la cantidad de personas
+            'cantidad_personas': cantidad_personas
         })
         self.calcular_total()
         self.actualizar_saldo()
@@ -174,7 +180,7 @@ class MovimientoCliente(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
     tipo_movimiento = models.CharField(max_length=100)
     descripcion = models.TextField()
-    fecha_movimiento = models.DateTimeField(auto_now_add=True)  
+    fecha_movimiento = models.DateTimeField(auto_now_add=True)
     usuario = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
 class ReservaProducto(models.Model):
@@ -188,7 +194,7 @@ class ReservaProducto(models.Model):
 class ReservaServicio(models.Model):
     venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaservicios')
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
-    fecha_agendamiento = models.DateTimeField(default=timezone.now)  # Especificamos el tipo de dato correcto
+    fecha_agendamiento = models.DateTimeField(default=timezone.now)
     cantidad_personas = models.PositiveIntegerField(default=1)
 
     def __str__(self):
