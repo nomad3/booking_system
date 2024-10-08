@@ -55,19 +55,15 @@ def servicios_vendidos_view(request):
     if categoria_id:
         servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
 
-    # Filtrar por ID de VentaReserva solo si el valor es válido
-    if venta_reserva_id and venta_reserva_id != 'None':  # Validar que el ID es un número
-        try:
-            venta_reserva_id = int(venta_reserva_id)
-            servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=venta_reserva_id)
-        except ValueError:
-            pass  # Si no es un número válido, se ignora el filtro
+    # Filtrar por ID de VentaReserva si está presente
+    if venta_reserva_id and venta_reserva_id != 'None':
+        servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=venta_reserva_id)
 
-    # Calcular el monto total de los servicios vendidos
+    # Calcular el monto total vendido
     total_monto_vendido = sum([servicio.servicio.precio_base * servicio.cantidad_personas for servicio in servicios_vendidos])
 
     # Paginación
-    paginator = Paginator(servicios_vendidos, 100)  # Mostrar 100 servicios por página
+    paginator = Paginator(servicios_vendidos, 10)  # Mostrar 10 servicios por página
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -78,7 +74,7 @@ def servicios_vendidos_view(request):
     data = []
     for servicio in page_obj:
         total_monto = servicio.servicio.precio_base * servicio.cantidad_personas
-        fecha_agendamiento = servicio.fecha_agendamiento
+        fecha_agendamiento = timezone.localtime(servicio.fecha_agendamiento)
 
         data.append({
             'venta_reserva_id': servicio.venta_reserva.id,
@@ -87,21 +83,20 @@ def servicios_vendidos_view(request):
             'servicio_nombre': servicio.servicio.nombre,
             'fecha_agendamiento': fecha_agendamiento.date(),
             'hora_agendamiento': fecha_agendamiento.time(),
-            'monto': servicio.servicio.precio_base,
             'cantidad_personas': servicio.cantidad_personas,
             'total_monto': total_monto
         })
 
     # Pasar los datos y las categorías a la plantilla
     context = {
-        'servicios': data,  # Datos de los servicios con paginación
+        'servicios': data,
+        'page_obj': page_obj,
         'categorias': categorias,
         'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,
+        'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,  # Corregido para evitar restar si fecha_fin es None
         'categoria_id': categoria_id,
         'venta_reserva_id': venta_reserva_id,
-        'total_monto_vendido': total_monto_vendido,
-        'page_obj': page_obj,  # Paginación
+        'total_monto_vendido': total_monto_vendido
     }
 
     return render(request, 'ventas/servicios_vendidos.html', context)
