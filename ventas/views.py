@@ -9,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente  
 from .utils import verificar_disponibilidad
+from django.utils.timezone import make_aware
 from django.utils.dateparse import parse_date
 from django.db.models import Q, Sum
 from django.db import transaction
@@ -304,11 +305,14 @@ def auditoria_movimientos_view(request):
         movimientos = movimientos.filter(cliente_id=cliente_id)
 
     # Filtrar por rango de fechas si se proporciona
-    if fecha_inicio and fecha_fin:
-        movimientos = movimientos.filter(fecha_movimiento__range=[fecha_inicio, fecha_fin])
-    elif fecha_inicio:
+    if fecha_inicio:
+        # Convertir la fecha de inicio a formato datetime y asegurarse de que sea 'aware'
+        fecha_inicio = make_aware(datetime.strptime(fecha_inicio, '%Y-%m-%d'))
         movimientos = movimientos.filter(fecha_movimiento__gte=fecha_inicio)
-    elif fecha_fin:
+
+    if fecha_fin:
+        # Convertir la fecha de fin a formato datetime, añadir un día y asegurarse de que sea 'aware'
+        fecha_fin = make_aware(datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1))
         movimientos = movimientos.filter(fecha_movimiento__lte=fecha_fin)
 
     # Filtrar por tipo de movimiento si se proporciona
@@ -323,7 +327,7 @@ def auditoria_movimientos_view(request):
     context = {
         'movimientos': movimientos,
         'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin,
+        'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,
         'cliente_id': cliente_id,
         'tipo_movimiento': tipo_movimiento,
         'usuario_id': usuario_id,
@@ -331,7 +335,6 @@ def auditoria_movimientos_view(request):
 
     # Renderizar la plantilla con los datos
     return render(request, 'ventas/auditoria_movimientos.html', context)
-
 
 def caja_diaria_view(request):
     # Obtener la fecha actual
