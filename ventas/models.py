@@ -153,15 +153,14 @@ class Pago(models.Model):
     METODOS_PAGO = [
         ('tarjeta', 'Tarjeta de Crédito/Débito'),
         ('efectivo', 'Efectivo'),
-        ('transferencia', 'Transferencia Bancaria'),
         ('webpay', 'WebPay'),
         ('descuento', 'Descuento'),
         ('giftcard', 'GiftCard'),
         ('flow', 'FLOW'),
         ('mercadopago', 'MercadoPago'),
-        ('scotiabank', 'ScotiaBank'),
-        ('bancoestado', 'BancoEstado'),
-        ('cuentarut', 'CuentaRut'),
+        ('scotiabank', 'Tranferencia ScotiaBank'),
+        ('bancoestado', 'Transferencia BancoEstado'),
+        ('cuentarut', 'Transferencia CuentaRut'),
     ]
 
     venta_reserva = models.ForeignKey(VentaReserva, related_name='pagos', on_delete=models.CASCADE)
