@@ -2,7 +2,7 @@
 from rest_framework import viewsets
 from rest_framework.response import Response
 from django.shortcuts import render
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Cliente, Pago, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente  
@@ -41,7 +41,7 @@ def servicios_vendidos_view(request):
         servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio)
 
     if fecha_fin:
-        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d')
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)  # Ajuste para incluir todo el día completo
         servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__lte=fecha_fin)
 
     # Filtrar por categoría de servicio si está presente
@@ -81,7 +81,7 @@ def servicios_vendidos_view(request):
         'servicios': data,
         'categorias': categorias,
         'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin,
+        'fecha_fin': fecha_fin - timedelta(days=1),  # Para mostrar la fecha correctamente en el campo de filtro
         'categoria_id': categoria_id,
         'venta_reserva_id': venta_reserva_id,  # Añadir el ID de reserva al contexto
     })
