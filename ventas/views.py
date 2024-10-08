@@ -296,7 +296,7 @@ def auditoria_movimientos_view(request):
     cliente_id = request.GET.get('cliente')
     tipo_movimiento = request.GET.get('tipo_movimiento')
     usuario_id = request.GET.get('usuario')
-    
+
     # Obtener todos los movimientos, pre-cargando datos del cliente y usuario
     movimientos = MovimientoCliente.objects.select_related('cliente', 'usuario').all()
 
@@ -314,11 +314,11 @@ def auditoria_movimientos_view(request):
         movimientos = movimientos.filter(fecha_movimiento__lte=fecha_fin)
 
     # Filtrar por tipo de movimiento si se proporciona
-    if tipo_movimiento:
+    if tipo_movimiento and tipo_movimiento != 'None':  # Verificar si no es None
         movimientos = movimientos.filter(tipo_movimiento=tipo_movimiento)
 
     # Filtrar por usuario si se proporciona y si no es 'None'
-    if usuario_id and usuario_id != 'None':  # Verificación para evitar filtrar con 'None'
+    if usuario_id and usuario_id != 'None':  # Verificar si no es None
         movimientos = movimientos.filter(usuario_id=usuario_id)
 
     # Pasar los movimientos al contexto de la plantilla
@@ -327,8 +327,8 @@ def auditoria_movimientos_view(request):
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         'cliente_id': cliente_id,
-        'tipo_movimiento': tipo_movimiento,
-        'usuario_id': usuario_id,
+        'tipo_movimiento': tipo_movimiento if tipo_movimiento != 'None' else '',  # Mostrar campo vacío si es None
+        'usuario_id': usuario_id if usuario_id != 'None' else '',  # Mostrar campo vacío si es None
     }
 
     # Renderizar la plantilla con los datos
