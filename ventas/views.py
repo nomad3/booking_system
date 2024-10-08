@@ -51,8 +51,8 @@ def servicios_vendidos_view(request):
     if categoria_id:
         servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
 
-    # Filtrar por ID de VentaReserva si está presente
-    if venta_reserva_id:
+    # Filtrar por ID de VentaReserva si está presente y es válido
+    if venta_reserva_id and venta_reserva_id != 'None':  # Agregar verificación
         servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=venta_reserva_id)
 
     # Ordenar los servicios vendidos
