@@ -44,7 +44,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
+    'ventas.middleware.ThreadLocalMiddleware',  # Agregar aquí el nuevo middleware
 ]
 
 ROOT_URLCONF = 'aremko_project.urls'
