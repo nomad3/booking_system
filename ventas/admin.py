@@ -61,7 +61,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
     list_display = ('id', 'cliente', 'fecha_reserva', 'estado', 'total', 'pagado', 'saldo_pendiente')
     readonly_fields = ('total', 'pagado', 'saldo_pendiente')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
-    list_filter = ('cliente', 'servicios', 'fecha_reserva', 'estado')
+    list_filter = ('servicios', 'fecha_reserva', 'estado')
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
 
     def save_model(self, request, obj, form, change):
