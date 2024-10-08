@@ -29,8 +29,8 @@ def servicios_vendidos_view(request):
     # Obtener los parámetros del filtro
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
-    categoria_id = request.GET.get('categoria')
-    venta_reserva_id = request.GET.get('venta_reserva_id')  # Nuevo campo de búsqueda por ID de reserva
+    categoria_id = request.GET.get('categoria')  # Filtro por categoría restaurado
+    venta_reserva_id = request.GET.get('venta_reserva_id')  # Filtro por ID de reserva
 
     # Consultar todos los servicios vendidos
     servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
@@ -65,7 +65,7 @@ def servicios_vendidos_view(request):
         fecha_agendamiento = timezone.localtime(servicio.fecha_agendamiento)  # Convertir a hora local si es necesario
 
         data.append({
-            'venta_reserva_id': servicio.venta_reserva.id,  # ID de la Venta/Reserva
+            'venta_reserva_id': servicio.venta_reserva.id,  # Número de venta/reserva
             'cliente_nombre': servicio.venta_reserva.cliente.nombre,  # Nombre del cliente
             'categoria_servicio': servicio.servicio.categoria.nombre,  # Categoría del servicio
             'servicio_nombre': servicio.servicio.nombre,  # Nombre del servicio
