@@ -306,28 +306,26 @@ def auditoria_movimientos_view(request):
 
     # Filtrar por rango de fechas si se proporciona
     if fecha_inicio:
-        # Convertir la fecha de inicio a formato datetime y asegurarse de que sea 'aware'
-        fecha_inicio = make_aware(datetime.strptime(fecha_inicio, '%Y-%m-%d'))
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
         movimientos = movimientos.filter(fecha_movimiento__gte=fecha_inicio)
-
+        
     if fecha_fin:
-        # Convertir la fecha de fin a formato datetime, añadir un día y asegurarse de que sea 'aware'
-        fecha_fin = make_aware(datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1))
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
         movimientos = movimientos.filter(fecha_movimiento__lte=fecha_fin)
 
     # Filtrar por tipo de movimiento si se proporciona
     if tipo_movimiento:
         movimientos = movimientos.filter(tipo_movimiento=tipo_movimiento)
 
-    # Filtrar por usuario si se proporciona
-    if usuario_id:
+    # Filtrar por usuario si se proporciona y si no es 'None'
+    if usuario_id and usuario_id != 'None':  # Verificación para evitar filtrar con 'None'
         movimientos = movimientos.filter(usuario_id=usuario_id)
 
     # Pasar los movimientos al contexto de la plantilla
     context = {
         'movimientos': movimientos,
         'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,
+        'fecha_fin': fecha_fin,
         'cliente_id': cliente_id,
         'tipo_movimiento': tipo_movimiento,
         'usuario_id': usuario_id,
