@@ -1,6 +1,7 @@
 
 from rest_framework import viewsets
 from rest_framework.response import Response
+from django.db.models import Sum
 from django.contrib.auth.decorators import user_passes_test
 import csv
 from django.http import HttpResponse
@@ -53,9 +54,14 @@ def servicios_vendidos_view(request):
     if categoria_id:
         servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
 
-    # Filtrar por ID de VentaReserva si está presente y es válido
-    if venta_reserva_id and venta_reserva_id != 'None':  # Agregar verificación
+    # Filtrar por ID de VentaReserva si está presente
+    if venta_reserva_id:
         servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=venta_reserva_id)
+
+    # Calcular el monto total de los servicios vendidos
+    total_monto_vendido = servicios_vendidos.aggregate(
+        total=Sum('servicio__precio_base', field="servicio__precio_base * cantidad_personas")
+    )['total'] or 0
 
     # Ordenar los servicios vendidos
     servicios_vendidos = servicios_vendidos.order_by('-fecha_agendamiento__date', 'fecha_agendamiento__time')
@@ -81,9 +87,6 @@ def servicios_vendidos_view(request):
             'total_monto': total_monto
         })
 
-    # Obtener todas las categorías de servicio para el filtro
-    categorias = CategoriaServicio.objects.all()
-
     # Pasar los datos y las categorías a la plantilla
     context = {
         'servicios': data,
@@ -91,7 +94,8 @@ def servicios_vendidos_view(request):
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,  # Corregido para evitar restar si fecha_fin es None
         'categoria_id': categoria_id,
-        'venta_reserva_id': venta_reserva_id
+        'venta_reserva_id': venta_reserva_id,
+        'total_monto_vendido': total_monto_vendido  # Agregando el total al contexto
     }
 
     return render(request, 'ventas/servicios_vendidos.html', context)

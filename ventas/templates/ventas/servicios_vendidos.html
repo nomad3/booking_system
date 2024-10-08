@@ -30,6 +30,11 @@
         <button type="submit" class="btn btn-primary mb-2">Buscar</button>
     </form>
 
+    <!-- Mostrar el monto total vendido -->
+    <div class="alert alert-info">
+        <strong>Total Monto Vendido: ${{ total_monto_vendido|floatformat:0 }}</strong>
+    </div>
+
     <!-- Tabla de servicios vendidos -->
     <table class="table table-striped table-bordered">
         <thead>
@@ -58,7 +63,7 @@
                 <td>{{ servicio.fecha_agendamiento }}</td>
                 <td>{{ servicio.hora_agendamiento }}</td>
                 <td>{{ servicio.cantidad_personas }}</td>
-                <td>{{ servicio.total_monto }}</td>
+                <td>${{ servicio.total_monto|floatformat:0 }}</td>
             </tr>
             {% empty %}
             <tr>
