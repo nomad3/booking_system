@@ -15,6 +15,7 @@ from django.utils.dateparse import parse_date
 from django.db.models import Q, Sum
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
+from django.contrib.auth.models import User
 from .serializers import (
     ProveedorSerializer,
     CategoriaProductoSerializer,
@@ -300,7 +301,7 @@ def auditoria_movimientos_view(request):
     fecha_fin = request.GET.get('fecha_fin')
     cliente_id = request.GET.get('cliente')
     tipo_movimiento = request.GET.get('tipo_movimiento')
-    usuario_id = request.GET.get('usuario')
+    usuario_username = request.GET.get('usuario')  # Cambiar a username en lugar de id
 
     # Obtener todos los movimientos, pre-cargando datos del cliente y usuario
     movimientos = MovimientoCliente.objects.select_related('cliente', 'usuario').all()
@@ -313,7 +314,6 @@ def auditoria_movimientos_view(request):
     if fecha_inicio:
         fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
         movimientos = movimientos.filter(fecha_movimiento__gte=fecha_inicio)
-        
     if fecha_fin:
         fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
         movimientos = movimientos.filter(fecha_movimiento__lte=fecha_fin)
@@ -323,8 +323,11 @@ def auditoria_movimientos_view(request):
         movimientos = movimientos.filter(tipo_movimiento=tipo_movimiento)
 
     # Filtrar por usuario si se proporciona
-    if usuario_id and usuario_id != 'None':
-        movimientos = movimientos.filter(usuario_id=usuario_id)
+    if usuario_username and usuario_username != 'None':
+        movimientos = movimientos.filter(usuario__username=usuario_username)
+
+    # Obtener todos los usuarios para la lista desplegable
+    usuarios = User.objects.all()
 
     # Pasar los movimientos al contexto de la plantilla
     context = {
@@ -333,10 +336,10 @@ def auditoria_movimientos_view(request):
         'fecha_fin': fecha_fin,
         'cliente_id': cliente_id,
         'tipo_movimiento': tipo_movimiento if tipo_movimiento != 'None' else '',
-        'usuario_id': usuario_id if usuario_id != 'None' else '',
+        'usuario_username': usuario_username if usuario_username != 'None' else '',
+        'usuarios': usuarios,  # Enviar los usuarios al contexto para la lista desplegable
     }
 
-    # Renderizar la plantilla con los datos
     return render(request, 'ventas/auditoria_movimientos.html', context)
 
 def caja_diaria_view(request):

@@ -18,12 +18,19 @@
           <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin|date:'Y-m-d' }}" class="vDateField">
         </div>
         <div class="field-box">
-          <label for="tipo_movimiento">Tipo de Movimiento:</label>
-          <input type="text" id="tipo_movimiento" name="tipo_movimiento" value="{{ tipo_movimiento }}" class="vTextField">
+          <label for="tipo_movimiento">Tipo Movimiento:</label>
+          <input type="text" id="tipo_movimiento" name="tipo_movimiento" value="{{ tipo_movimiento }}" class="form-control">
         </div>
         <div class="field-box">
           <label for="usuario">Usuario:</label>
-          <input type="text" id="usuario" name="usuario" value="{{ usuario_id }}" class="vTextField">
+          <select id="usuario" name="usuario" class="form-control">
+            <option value="">-- Seleccionar Usuario --</option>
+            {% for usuario in usuarios %}
+              <option value="{{ usuario.username }}" {% if usuario_username == usuario.username %}selected{% endif %}>
+                {{ usuario.username }}
+              </option>
+            {% endfor %}
+          </select>
         </div>
       </div>
       <button type="submit" class="btn btn-primary">Filtrar</button>
