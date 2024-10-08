@@ -56,35 +56,33 @@ def servicios_vendidos_view(request):
         servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
 
     # Filtrar por ID de VentaReserva si está presente
-    if venta_reserva_id and venta_reserva_id.isdigit():
-        servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=int(venta_reserva_id))
+    if venta_reserva_id:
+        servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=venta_reserva_id)
+
+    # Obtener todas las categorías de servicio para el filtro
+    categorias = CategoriaServicio.objects.all()
+
+    # Sumar el total de monto vendido
+    total_monto_vendido = sum(servicio.servicio.precio_base * servicio.cantidad_personas for servicio in servicios_vendidos)
 
     # Ordenar los servicios vendidos
     servicios_vendidos = servicios_vendidos.order_by('-fecha_agendamiento__date', 'fecha_agendamiento__time')
 
-    # Sumar el monto total de todos los servicios vendidos que se están mostrando
-    total_monto_vendido = sum(servicio.servicio.precio_base * servicio.cantidad_personas for servicio in servicios_vendidos)
+    # Configurar paginación
+    paginator = Paginator(servicios_vendidos, 10)  # Mostrar 10 servicios por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
-    # Paginación
-    paginator = Paginator(servicios_vendidos, 10)  # 10 servicios por página
-    page = request.GET.get('page')
-
-    try:
-        servicios_paginados = paginator.page(page)
-    except PageNotAnInteger:
-        servicios_paginados = paginator.page(1)
-    except EmptyPage:
-        servicios_paginados = paginator.page(paginator.num_pages)
-
-    # Pasar los datos y las categorías a la plantilla
+    # Pasar los datos al contexto
     context = {
-        'servicios': servicios_paginados,
-        'categorias': categorias,
+        'servicios': page_obj,  # Lista paginada de servicios
+        'categorias': categorias,  # Asegurarse de pasar las categorías al contexto
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,
         'categoria_id': categoria_id,
         'venta_reserva_id': venta_reserva_id,
         'total_monto_vendido': total_monto_vendido,
+        'page_obj': page_obj,  # Objeto paginado para la plantilla
     }
 
     return render(request, 'ventas/servicios_vendidos.html', context)
@@ -324,7 +322,7 @@ def auditoria_movimientos_view(request):
     usuarios = User.objects.all()
 
     # Configurar paginación
-    paginator = Paginator(movimientos, 10)  # Mostrar 10 movimientos por página
+    paginator = Paginator(movimientos, 100)  # Mostrar 100 movimientos por página
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 

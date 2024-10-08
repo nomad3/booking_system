@@ -68,8 +68,8 @@
     <div class="pagination">
       <span class="step-links">
         {% if movimientos.has_previous %}
-          <a href="?page=1">&laquo; first</a>
-          <a href="?page={{ movimientos.previous_page_number }}">previous</a>
+          <a href="?page=1{% if fecha_inicio %}&fecha_inicio={{ fecha_inicio }}{% endif %}{% if fecha_fin %}&fecha_fin={{ fecha_fin }}{% endif %}{% if tipo_movimiento %}&tipo_movimiento={{ tipo_movimiento }}{% endif %}{% if usuario_username %}&usuario={{ usuario_username }}{% endif %}">&laquo; first</a>
+          <a href="?page={{ movimientos.previous_page_number }}{% if fecha_inicio %}&fecha_inicio={{ fecha_inicio }}{% endif %}{% if fecha_fin %}&fecha_fin={{ fecha_fin }}{% endif %}{% if tipo_movimiento %}&tipo_movimiento={{ tipo_movimiento }}{% endif %}{% if usuario_username %}&usuario={{ usuario_username }}{% endif %}">previous</a>
         {% endif %}
 
         <span class="current">
@@ -77,8 +77,8 @@
         </span>
 
         {% if movimientos.has_next %}
-          <a href="?page={{ movimientos.next_page_number }}">next</a>
-          <a href="?page={{ movimientos.paginator.num_pages }}">last &raquo;</a>
+          <a href="?page={{ movimientos.next_page_number }}{% if fecha_inicio %}&fecha_inicio={{ fecha_inicio }}{% endif %}{% if fecha_fin %}&fecha_fin={{ fecha_fin }}{% endif %}{% if tipo_movimiento %}&tipo_movimiento={{ tipo_movimiento }}{% endif %}{% if usuario_username %}&usuario={{ usuario_username }}{% endif %}">next</a>
+          <a href="?page={{ movimientos.paginator.num_pages }}{% if fecha_inicio %}&fecha_inicio={{ fecha_inicio }}{% endif %}{% if fecha_fin %}&fecha_fin={{ fecha_fin }}{% endif %}{% if tipo_movimiento %}&tipo_movimiento={{ tipo_movimiento }}{% endif %}{% if usuario_username %}&usuario={{ usuario_username }}{% endif %}">last &raquo;</a>
         {% endif %}
       </span>
     </div>
