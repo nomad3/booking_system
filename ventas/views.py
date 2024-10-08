@@ -54,20 +54,18 @@ def servicios_vendidos_view(request):
     if categoria_id:
         servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
 
-    # Filtrar por ID de VentaReserva si está presente
-    if venta_reserva_id:
-        servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=venta_reserva_id)
-
-    # Calcular el monto total de los servicios vendidos
-    total_monto_vendido = servicios_vendidos.aggregate(
-        total=Sum('servicio__precio_base', field="servicio__precio_base * cantidad_personas")
-    )['total'] or 0
+    # Filtrar por ID de VentaReserva si está presente y es un número válido
+    if venta_reserva_id and venta_reserva_id.isdigit():
+        servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=int(venta_reserva_id))
 
     # Ordenar los servicios vendidos
     servicios_vendidos = servicios_vendidos.order_by('-fecha_agendamiento__date', 'fecha_agendamiento__time')
 
     # Obtener todas las categorías de servicio para el filtro
     categorias = CategoriaServicio.objects.all()
+
+    # Sumar el monto total de todos los servicios vendidos que se están mostrando
+    total_monto_vendido = sum(servicio.servicio.precio_base * servicio.cantidad_personas for servicio in servicios_vendidos)
 
     # Preparar los datos para la tabla
     data = []
@@ -92,10 +90,10 @@ def servicios_vendidos_view(request):
         'servicios': data,
         'categorias': categorias,
         'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,  # Corregido para evitar restar si fecha_fin es None
+        'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,
         'categoria_id': categoria_id,
         'venta_reserva_id': venta_reserva_id,
-        'total_monto_vendido': total_monto_vendido  # Agregando el total al contexto
+        'total_monto_vendido': total_monto_vendido  # Pasar el total del monto vendido al contexto
     }
 
     return render(request, 'ventas/servicios_vendidos.html', context)
