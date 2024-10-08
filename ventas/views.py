@@ -30,6 +30,7 @@ def servicios_vendidos_view(request):
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
     categoria_id = request.GET.get('categoria')
+    venta_reserva_id = request.GET.get('venta_reserva_id')  # Nuevo campo de búsqueda por ID de reserva
 
     # Consultar todos los servicios vendidos
     servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
@@ -47,6 +48,10 @@ def servicios_vendidos_view(request):
     if categoria_id:
         servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
 
+    # Filtrar por ID de VentaReserva si está presente
+    if venta_reserva_id:
+        servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=venta_reserva_id)
+
     # Ordenar primero por fecha en orden decreciente y luego por hora en orden creciente
     servicios_vendidos = servicios_vendidos.order_by('-fecha_agendamiento__date', 'fecha_agendamiento__time')
 
@@ -60,14 +65,14 @@ def servicios_vendidos_view(request):
         fecha_agendamiento = timezone.localtime(servicio.fecha_agendamiento)  # Convertir a hora local si es necesario
 
         data.append({
-            'venta_reserva_id': servicio.venta_reserva.id,  # Número de venta/reserva
+            'venta_reserva_id': servicio.venta_reserva.id,  # ID de la Venta/Reserva
             'cliente_nombre': servicio.venta_reserva.cliente.nombre,  # Nombre del cliente
             'categoria_servicio': servicio.servicio.categoria.nombre,  # Categoría del servicio
             'servicio_nombre': servicio.servicio.nombre,  # Nombre del servicio
             'fecha_agendamiento': fecha_agendamiento.date(),  # Mostrar solo la fecha
             'hora_agendamiento': fecha_agendamiento.time(),  # Mostrar solo la hora
             'monto': servicio.servicio.precio_base,  # Monto por persona
-            'cantidad_personas': servicio.cantidad_personas,  # Cantidad de pasajeros
+            'cantidad_personas': servicio.cantidad_personas,  # Cantidad de personas
             'total_monto': total_monto  # Monto total (monto * cantidad_personas)
         })
 
@@ -77,7 +82,8 @@ def servicios_vendidos_view(request):
         'categorias': categorias,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
-        'categoria_id': categoria_id
+        'categoria_id': categoria_id,
+        'venta_reserva_id': venta_reserva_id,  # Añadir el ID de reserva al contexto
     })
 
 class ProveedorViewSet(viewsets.ModelViewSet):
@@ -282,7 +288,7 @@ def auditoria_movimientos_view(request):
     cliente_id = request.GET.get('cliente')
     tipo_movimiento = request.GET.get('tipo_movimiento')
     usuario_id = request.GET.get('usuario')
-
+    
     # Obtener todos los movimientos, pre-cargando datos del cliente y usuario
     movimientos = MovimientoCliente.objects.select_related('cliente', 'usuario').all()
 
@@ -318,6 +324,7 @@ def auditoria_movimientos_view(request):
 
     # Renderizar la plantilla con los datos
     return render(request, 'ventas/auditoria_movimientos.html', context)
+
 
 def caja_diaria_view(request):
     # Obtener la fecha actual
