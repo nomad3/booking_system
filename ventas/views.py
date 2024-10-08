@@ -1,6 +1,7 @@
 
 from rest_framework import viewsets
 from rest_framework.response import Response
+from django.contrib.auth.decorators import user_passes_test
 import csv
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -288,7 +289,11 @@ def inicio_sistema_view(request):
     return render(request, 'ventas/inicio_sistema.html')
 
 
-@login_required
+# Función para verificar si el usuario es administrador
+def es_administrador(user):
+    return user.is_superuser
+
+@user_passes_test(es_administrador)  # Restringir el acceso a administradores
 def auditoria_movimientos_view(request):
     # Obtener los parámetros del filtro
     fecha_inicio = request.GET.get('fecha_inicio')
@@ -314,11 +319,11 @@ def auditoria_movimientos_view(request):
         movimientos = movimientos.filter(fecha_movimiento__lte=fecha_fin)
 
     # Filtrar por tipo de movimiento si se proporciona
-    if tipo_movimiento and tipo_movimiento != 'None':  # Verificar si no es None
+    if tipo_movimiento and tipo_movimiento != 'None':
         movimientos = movimientos.filter(tipo_movimiento=tipo_movimiento)
 
-    # Filtrar por usuario si se proporciona y si no es 'None'
-    if usuario_id and usuario_id != 'None':  # Verificar si no es None
+    # Filtrar por usuario si se proporciona
+    if usuario_id and usuario_id != 'None':
         movimientos = movimientos.filter(usuario_id=usuario_id)
 
     # Pasar los movimientos al contexto de la plantilla
@@ -327,8 +332,8 @@ def auditoria_movimientos_view(request):
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         'cliente_id': cliente_id,
-        'tipo_movimiento': tipo_movimiento if tipo_movimiento != 'None' else '',  # Mostrar campo vacío si es None
-        'usuario_id': usuario_id if usuario_id != 'None' else '',  # Mostrar campo vacío si es None
+        'tipo_movimiento': tipo_movimiento if tipo_movimiento != 'None' else '',
+        'usuario_id': usuario_id if usuario_id != 'None' else '',
     }
 
     # Renderizar la plantilla con los datos
