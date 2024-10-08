@@ -1,6 +1,8 @@
 
 from rest_framework import viewsets
 from rest_framework.response import Response
+import csv
+from django.http import HttpResponse
 from django.shortcuts import render
 from datetime import datetime, timedelta
 from django.contrib.auth.decorators import login_required
@@ -29,8 +31,8 @@ def servicios_vendidos_view(request):
     # Obtener los parámetros del filtro
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
-    categoria_id = request.GET.get('categoria')  # Filtro por categoría restaurado
-    venta_reserva_id = request.GET.get('venta_reserva_id')  # Filtro por ID de reserva
+    categoria_id = request.GET.get('categoria')
+    venta_reserva_id = request.GET.get('venta_reserva_id')
 
     # Consultar todos los servicios vendidos
     servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
@@ -41,7 +43,7 @@ def servicios_vendidos_view(request):
         servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio)
 
     if fecha_fin:
-        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)  # Ajuste para incluir todo el día completo
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
         servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__lte=fecha_fin)
 
     # Filtrar por categoría de servicio si está presente
@@ -52,7 +54,7 @@ def servicios_vendidos_view(request):
     if venta_reserva_id:
         servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=venta_reserva_id)
 
-    # Ordenar primero por fecha en orden decreciente y luego por hora en orden creciente
+    # Ordenar los servicios vendidos
     servicios_vendidos = servicios_vendidos.order_by('-fecha_agendamiento__date', 'fecha_agendamiento__time')
 
     # Obtener todas las categorías de servicio para el filtro
@@ -62,29 +64,34 @@ def servicios_vendidos_view(request):
     data = []
     for servicio in servicios_vendidos:
         total_monto = servicio.servicio.precio_base * servicio.cantidad_personas
-        fecha_agendamiento = timezone.localtime(servicio.fecha_agendamiento)  # Convertir a hora local si es necesario
+        fecha_agendamiento = timezone.localtime(servicio.fecha_agendamiento)
 
         data.append({
-            'venta_reserva_id': servicio.venta_reserva.id,  # Número de venta/reserva
-            'cliente_nombre': servicio.venta_reserva.cliente.nombre,  # Nombre del cliente
-            'categoria_servicio': servicio.servicio.categoria.nombre,  # Categoría del servicio
-            'servicio_nombre': servicio.servicio.nombre,  # Nombre del servicio
-            'fecha_agendamiento': fecha_agendamiento.date(),  # Mostrar solo la fecha
-            'hora_agendamiento': fecha_agendamiento.time(),  # Mostrar solo la hora
-            'monto': servicio.servicio.precio_base,  # Monto por persona
-            'cantidad_personas': servicio.cantidad_personas,  # Cantidad de personas
-            'total_monto': total_monto  # Monto total (monto * cantidad_personas)
+            'venta_reserva_id': servicio.venta_reserva.id,
+            'cliente_nombre': servicio.venta_reserva.cliente.nombre,
+            'categoria_servicio': servicio.servicio.categoria.nombre,
+            'servicio_nombre': servicio.servicio.nombre,
+            'fecha_agendamiento': fecha_agendamiento.date(),
+            'hora_agendamiento': fecha_agendamiento.time(),
+            'monto': servicio.servicio.precio_base,
+            'cantidad_personas': servicio.cantidad_personas,
+            'total_monto': total_monto
         })
 
+    # Obtener todas las categorías de servicio para el filtro
+    categorias = CategoriaServicio.objects.all()
+
     # Pasar los datos y las categorías a la plantilla
-    return render(request, 'ventas/servicios_vendidos.html', {
+    context = {
         'servicios': data,
         'categorias': categorias,
         'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin - timedelta(days=1),  # Para mostrar la fecha correctamente en el campo de filtro
+        'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,  # Corregido para evitar restar si fecha_fin es None
         'categoria_id': categoria_id,
-        'venta_reserva_id': venta_reserva_id,  # Añadir el ID de reserva al contexto
-    })
+        'venta_reserva_id': venta_reserva_id
+    }
+
+    return render(request, 'ventas/servicios_vendidos.html', context)
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()
