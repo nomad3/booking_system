@@ -16,7 +16,6 @@ from django.utils.dateparse import parse_date
 from django.db.models import Q, Sum
 from django.db import transaction
 from rest_framework.exceptions import ValidationError
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth.models import User
 from .serializers import (
     ProveedorSerializer,
@@ -55,36 +54,46 @@ def servicios_vendidos_view(request):
     if categoria_id:
         servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
 
-    # Filtrar por ID de VentaReserva si está presente
+    # Filtrar por ID de VentaReserva si está presente y es un número válido
     if venta_reserva_id and venta_reserva_id.isdigit():
         servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=int(venta_reserva_id))
 
     # Ordenar los servicios vendidos
     servicios_vendidos = servicios_vendidos.order_by('-fecha_agendamiento__date', 'fecha_agendamiento__time')
 
+    # Obtener todas las categorías de servicio para el filtro
+    categorias = CategoriaServicio.objects.all()
+
     # Sumar el monto total de todos los servicios vendidos que se están mostrando
     total_monto_vendido = sum(servicio.servicio.precio_base * servicio.cantidad_personas for servicio in servicios_vendidos)
 
-    # Paginación
-    paginator = Paginator(servicios_vendidos, 10)  # 10 servicios por página
-    page = request.GET.get('page')
+    # Preparar los datos para la tabla
+    data = []
+    for servicio in servicios_vendidos:
+        total_monto = servicio.servicio.precio_base * servicio.cantidad_personas
+        fecha_agendamiento = timezone.localtime(servicio.fecha_agendamiento)
 
-    try:
-        servicios_paginados = paginator.page(page)
-    except PageNotAnInteger:
-        servicios_paginados = paginator.page(1)
-    except EmptyPage:
-        servicios_paginados = paginator.page(paginator.num_pages)
+        data.append({
+            'venta_reserva_id': servicio.venta_reserva.id,
+            'cliente_nombre': servicio.venta_reserva.cliente.nombre,
+            'categoria_servicio': servicio.servicio.categoria.nombre,
+            'servicio_nombre': servicio.servicio.nombre,
+            'fecha_agendamiento': fecha_agendamiento.date(),
+            'hora_agendamiento': fecha_agendamiento.time(),
+            'monto': servicio.servicio.precio_base,
+            'cantidad_personas': servicio.cantidad_personas,
+            'total_monto': total_monto
+        })
 
     # Pasar los datos y las categorías a la plantilla
     context = {
-        'servicios': servicios_paginados,
+        'servicios': data,
         'categorias': categorias,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,
         'categoria_id': categoria_id,
         'venta_reserva_id': venta_reserva_id,
-        'total_monto_vendido': total_monto_vendido,
+        'total_monto_vendido': total_monto_vendido  # Pasar el total del monto vendido al contexto
     }
 
     return render(request, 'ventas/servicios_vendidos.html', context)
