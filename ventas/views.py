@@ -287,6 +287,7 @@ def inicio_sistema_view(request):
 def es_administrador(user):
     return user.is_superuser
 
+
 @user_passes_test(es_administrador)  # Restringir el acceso a administradores
 def auditoria_movimientos_view(request):
     # Obtener los parámetros del filtro
@@ -322,15 +323,21 @@ def auditoria_movimientos_view(request):
     # Obtener todos los usuarios para la lista desplegable
     usuarios = User.objects.all()
 
-    # Pasar los movimientos al contexto de la plantilla
+    # Configurar paginación
+    paginator = Paginator(movimientos, 10)  # Mostrar 10 movimientos por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Pasar los movimientos paginados al contexto de la plantilla
     context = {
-        'movimientos': movimientos,
+        'movimientos': page_obj,  # Los movimientos ahora son objetos paginados
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         'cliente_id': cliente_id,
         'tipo_movimiento': tipo_movimiento if tipo_movimiento != 'None' else '',
         'usuario_username': usuario_username if usuario_username != 'None' else '',
         'usuarios': usuarios,  # Enviar los usuarios al contexto para la lista desplegable
+        'page_obj': page_obj,  # Enviar el objeto de paginación al contexto
     }
 
     return render(request, 'ventas/auditoria_movimientos.html', context)
