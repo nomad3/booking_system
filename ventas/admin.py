@@ -91,7 +91,7 @@ class ProductoAdmin(admin.ModelAdmin):
 
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'email', 'telefono')
-    search_fields = ['nombre', 'telefono']
+    search_fields = ['nombre', 'telefono', 'email']
 
 class ServicioAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio_base', 'duracion', 'categoria', 'proveedor')
