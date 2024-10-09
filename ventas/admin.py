@@ -57,7 +57,8 @@ def registrar_movimiento(cliente, tipo_movimiento, descripcion, usuario):
         usuario=usuario
     )
 
-class VentaReservaAdmin(admin.ModelAdmin):
+class VentaReservaAdmin(admin.ModelAdmin):    
+    autocomplete_fields = ['cliente'] 
     list_display = ('id', 'cliente', 'fecha_reserva', 'estado', 'total', 'pagado', 'saldo_pendiente')
     readonly_fields = ('total', 'pagado', 'saldo_pendiente')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
@@ -90,6 +91,7 @@ class ProductoAdmin(admin.ModelAdmin):
 
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'email', 'telefono')
+    search_fields = ['nombre', 'telefono']
 
 class ServicioAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio_base', 'duracion', 'categoria', 'proveedor')
