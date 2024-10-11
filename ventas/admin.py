@@ -73,8 +73,8 @@ class VentaReservaAdmin(admin.ModelAdmin):
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
 
     def mostrar_categoria_servicios(self, obj):
-        # Manejar servicios con y sin categoría
-        return ", ".join([servicio.categoria.nombre if servicio.categoria else 'Sin categoría' for servicio in obj.servicios.all()])
+        # Obtener y mostrar la categoría de los servicios
+        return ", ".join([servicio.categoria.nombre for servicio in obj.servicios.all()])
     mostrar_categoria_servicios.short_description = 'Categoría de Servicios'
 
     def mostrar_nombre_servicios(self, obj):
@@ -94,18 +94,22 @@ class VentaReservaAdmin(admin.ModelAdmin):
     mostrar_total_servicios.short_description = 'Total de Servicios'
 
     def mostrar_categoria_productos(self, obj):
-        return ", ".join([producto.categoria.nombre if producto.categoria else 'Sin categoría' for producto in obj.productos.all()])
+        # Obtener y mostrar la categoría de los productos
+        return ", ".join([producto.categoria.nombre for producto in obj.productos.all()])
     mostrar_categoria_productos.short_description = 'Categoría de Productos'
 
     def mostrar_nombre_productos(self, obj):
+        # Obtener y mostrar los nombres de los productos
         return ", ".join([producto.nombre for producto in obj.productos.all()])
     mostrar_nombre_productos.short_description = 'Nombres de Productos'
 
     def mostrar_cantidad_productos(self, obj):
+        # Obtener y mostrar la cantidad de productos
         return ", ".join([str(reserva_producto.cantidad) for reserva_producto in obj.reservaprodutos.all()])
     mostrar_cantidad_productos.short_description = 'Cantidad de Productos'
 
     def mostrar_total_productos(self, obj):
+        # Calcular el total de productos
         total = sum([producto.precio_base * reserva_producto.cantidad for producto, reserva_producto in zip(obj.productos.all(), obj.reservaprodutos.all())])
         return f"{total} CLP"
     mostrar_total_productos.short_description = 'Total de Productos'
@@ -124,7 +128,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
         descripcion = f"Se ha eliminado la venta/reserva con ID {obj.id} del cliente {obj.cliente.nombre}."
         registrar_movimiento(obj.cliente, "Eliminación de Venta/Reserva", descripcion, request.user)
         super().delete_model(request, obj)
-
+        
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
 
