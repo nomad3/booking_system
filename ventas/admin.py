@@ -106,7 +106,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
     mostrar_cantidad_productos.short_description = 'Cantidad de Productos'
 
     def mostrar_total_productos(self, obj):
-        total = sum([producto.precio_base * reserva_producto.cantidad for producto, reserva_producto in zip(obj.productos.all(), obj.reservaproductos.all())])
+        total = sum([producto.precio_base * reserva_producto.cantidad for producto, reserva_producto in zip(obj.productos.all(), obj.reservaprodutos.all())])
         return f"{total} CLP"
     mostrar_total_productos.short_description = 'Total de Productos'
 
