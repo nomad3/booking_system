@@ -93,7 +93,7 @@ class VentaReserva(models.Model):
     def calcular_total(self):
         total = 0
         # Sumar los productos
-        for reserva_producto in self.reservaproductos.all():
+        for reserva_producto in self.reservaprodutos.all():
             total += reserva_producto.producto.precio_base * reserva_producto.cantidad
 
         # Sumar los servicios, usando el método `calcular_precio` de `ReservaServicio`
@@ -183,7 +183,7 @@ class MovimientoCliente(models.Model):
     usuario = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
 class ReservaProducto(models.Model):
-    venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaproductos')
+    venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaprodutos')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField()
 
