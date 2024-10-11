@@ -78,7 +78,7 @@ class PagoSerializer(serializers.ModelSerializer):
 
 class VentaReservaSerializer(serializers.ModelSerializer):
     pagos = PagoSerializer(many=True, read_only=True)
-    productos = ReservaProductoSerializer(many=True, source='reservaprodutos')
+    productos = ReservaProductoSerializer(many=True, source='reservaproductos')
     servicios = ReservaServicioSerializer(many=True, read_only=True, source='reservaservicios')
     total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     pagado = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
