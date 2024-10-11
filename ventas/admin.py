@@ -102,7 +102,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
     mostrar_nombre_productos.short_description = 'Nombres de Productos'
 
     def mostrar_cantidad_productos(self, obj):
-        return ", ".join([str(reserva_producto.cantidad) for reserva_producto in obj.reservaproductos.all()])
+        return ", ".join([str(reserva_producto.cantidad) for reserva_producto in obj.reservaprodutos.all()])
     mostrar_cantidad_productos.short_description = 'Cantidad de Productos'
 
     def mostrar_total_productos(self, obj):
