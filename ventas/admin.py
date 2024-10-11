@@ -59,60 +59,11 @@ def registrar_movimiento(cliente, tipo_movimiento, descripcion, usuario):
 
 class VentaReservaAdmin(admin.ModelAdmin):    
     autocomplete_fields = ['cliente'] 
-    list_display = (
-        'id', 'cliente', 'fecha_reserva', 'estado', 
-        'mostrar_categoria_servicios', 'mostrar_nombre_servicios', 
-        'mostrar_cantidad_servicios', 'mostrar_total_servicios', 
-        'mostrar_categoria_productos', 'mostrar_nombre_productos', 
-        'mostrar_cantidad_productos', 'mostrar_total_productos', 
-        'total', 'pagado', 'saldo_pendiente'
-    )
+    list_display = ('id', 'cliente', 'fecha_reserva', 'estado', 'total', 'pagado', 'saldo_pendiente')
     readonly_fields = ('total', 'pagado', 'saldo_pendiente')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
     list_filter = ('servicios', 'fecha_reserva', 'estado')
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
-
-    def mostrar_categoria_servicios(self, obj):
-        # Obtener y mostrar la categoría de los servicios
-        return ", ".join([servicio.categoria.nombre for servicio in obj.servicios.all()])
-    mostrar_categoria_servicios.short_description = 'Categoría de Servicios'
-
-    def mostrar_nombre_servicios(self, obj):
-        # Obtener y mostrar los nombres de los servicios
-        return ", ".join([servicio.nombre for servicio in obj.servicios.all()])
-    mostrar_nombre_servicios.short_description = 'Nombres de Servicios'
-
-    def mostrar_cantidad_servicios(self, obj):
-        # Obtener y mostrar la cantidad de personas para cada servicio
-        return ", ".join([str(reserva.cantidad_personas) for reserva in obj.reservaservicios.all()])
-    mostrar_cantidad_servicios.short_description = 'Cantidad de Servicios'
-
-    def mostrar_total_servicios(self, obj):
-        # Calcular el total de servicios
-        total = sum([servicio.precio_base * reserva.cantidad_personas for servicio, reserva in zip(obj.servicios.all(), obj.reservaservicios.all())])
-        return f"{total} CLP"
-    mostrar_total_servicios.short_description = 'Total de Servicios'
-
-    def mostrar_categoria_productos(self, obj):
-        # Obtener y mostrar la categoría de los productos
-        return ", ".join([producto.categoria.nombre for producto in obj.productos.all()])
-    mostrar_categoria_productos.short_description = 'Categoría de Productos'
-
-    def mostrar_nombre_productos(self, obj):
-        # Obtener y mostrar los nombres de los productos
-        return ", ".join([producto.nombre for producto in obj.productos.all()])
-    mostrar_nombre_productos.short_description = 'Nombres de Productos'
-
-    def mostrar_cantidad_productos(self, obj):
-        # Obtener y mostrar la cantidad de productos
-        return ", ".join([str(reserva_producto.cantidad) for reserva_producto in obj.reservaprodutos.all()])
-    mostrar_cantidad_productos.short_description = 'Cantidad de Productos'
-
-    def mostrar_total_productos(self, obj):
-        # Calcular el total de productos
-        total = sum([producto.precio_base * reserva_producto.cantidad for producto, reserva_producto in zip(obj.productos.all(), obj.reservaprodutos.all())])
-        return f"{total} CLP"
-    mostrar_total_productos.short_description = 'Total de Productos'
 
     def save_model(self, request, obj, form, change):
         if change:
@@ -128,7 +79,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
         descripcion = f"Se ha eliminado la venta/reserva con ID {obj.id} del cliente {obj.cliente.nombre}."
         registrar_movimiento(obj.cliente, "Eliminación de Venta/Reserva", descripcion, request.user)
         super().delete_model(request, obj)
-        
+
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
 
