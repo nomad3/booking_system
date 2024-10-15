@@ -33,7 +33,7 @@ from .serializers import (
 
 def servicios_vendidos_view(request):
     # Obtener la fecha actual con la zona horaria correcta
-    hoy = timezone.localdate()
+    hoy = timezone.localtime().date()
     
     # Obtener los parámetros del filtro, usando la fecha actual por defecto
     fecha_inicio = request.GET.get('fecha_inicio', hoy)
@@ -48,14 +48,15 @@ def servicios_vendidos_view(request):
     if isinstance(fecha_fin, str):
         fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
 
-    # Añadir la hora 23:59:59 para incluir todo el día en la fecha_fin
-    fecha_fin = fecha_fin + timedelta(days=1) - timedelta(seconds=1)
+    # Ajustar los límites de tiempo para incluir todo el día en el filtro
+    fecha_inicio = timezone.make_aware(datetime.combine(fecha_inicio, datetime.min.time()))
+    fecha_fin = timezone.make_aware(datetime.combine(fecha_fin, datetime.max.time()))
 
     # Consultar todos los servicios vendidos
     servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
 
     # Filtrar por rango de fechas
-    servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__date__gte=fecha_inicio, fecha_agendamiento__date__lte=fecha_fin)
+    servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio, fecha_agendamiento__lte=fecha_fin)
 
     # Filtrar por categoría de servicio si está presente
     if categoria_id:
@@ -96,11 +97,11 @@ def servicios_vendidos_view(request):
     context = {
         'servicios': data,
         'categorias': categorias,
-        'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,
+        'fecha_inicio': hoy,
+        'fecha_fin': hoy,
         'categoria_id': categoria_id,
         'venta_reserva_id': venta_reserva_id,
-        'total_monto_vendido': total_monto_vendido  # Pasar el total del monto vendido al contexto
+        'total_monto_vendido': total_monto_vendido
     }
 
     return render(request, 'ventas/servicios_vendidos.html', context)
