@@ -33,29 +33,36 @@ from .serializers import (
 
 def servicios_vendidos_view(request):
     # Obtener la fecha actual
-    fecha_hoy = timezone.now().date()
+    hoy = timezone.now().date()
 
-    # Obtener los parámetros del filtro o establecer la fecha actual como predeterminada
-    fecha_inicio = request.GET.get('fecha_inicio', fecha_hoy.strftime('%Y-%m-%d'))
-    fecha_fin = request.GET.get('fecha_fin', fecha_hoy.strftime('%Y-%m-%d'))
-    categoria_id = request.GET.get('categoria')
-    venta_reserva_id = request.GET.get('venta_reserva_id')
+    # Obtener los parámetros del filtro, y usar la fecha de hoy por defecto si no están presentes
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
 
-    # Convertir fechas de string a objetos datetime
-    fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
+    if not fecha_inicio:
+        fecha_inicio = hoy
+    else:
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+
+    if not fecha_fin:
+        fecha_fin = hoy
+    else:
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
 
     # Consultar todos los servicios vendidos
     servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
 
     # Filtrar por rango de fechas
-    servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio_dt, fecha_agendamiento__lte=fecha_fin_dt)
+    fecha_fin_con_tiempo = fecha_fin + timedelta(days=1) - timedelta(seconds=1)  # Incluir todo el día de la fecha_fin
+    servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio, fecha_agendamiento__lte=fecha_fin_con_tiempo)
 
     # Filtrar por categoría de servicio si está presente
+    categoria_id = request.GET.get('categoria')
     if categoria_id:
         servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
 
     # Filtrar por ID de VentaReserva si está presente y es un número válido
+    venta_reserva_id = request.GET.get('venta_reserva_id')
     if venta_reserva_id and venta_reserva_id.isdigit():
         servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=int(venta_reserva_id))
 
@@ -90,8 +97,8 @@ def servicios_vendidos_view(request):
     context = {
         'servicios': data,
         'categorias': categorias,
-        'fecha_inicio': fecha_inicio_dt.strftime('%Y-%m-%d'),
-        'fecha_fin': fecha_fin_dt.strftime('%Y-%m-%d'),
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
         'categoria_id': categoria_id,
         'venta_reserva_id': venta_reserva_id,
         'total_monto_vendido': total_monto_vendido  # Pasar el total del monto vendido al contexto
