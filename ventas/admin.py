@@ -57,9 +57,16 @@ def registrar_movimiento(cliente, tipo_movimiento, descripcion, usuario):
         usuario=usuario
     )
 
-class VentaReservaAdmin(admin.ModelAdmin):    
-    autocomplete_fields = ['cliente'] 
-    list_display = ('id', 'cliente', 'fecha_reserva', 'estado', 'total', 'pagado', 'saldo_pendiente')
+class VentaReservaAdmin(admin.ModelAdmin):
+    autocomplete_fields = ['cliente']
+    list_display = (
+        'id', 'cliente', 'fecha_reserva', 'estado', 
+        'mostrar_categoria_servicios', 'mostrar_nombre_servicios', 
+        'mostrar_cantidad_servicios', 'mostrar_total_servicios', 
+        'mostrar_categoria_productos', 'mostrar_nombre_productos', 
+        'mostrar_cantidad_productos', 'mostrar_total_productos', 
+        'total', 'pagado', 'saldo_pendiente'
+    )
     readonly_fields = ('total', 'pagado', 'saldo_pendiente')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
     list_filter = ('servicios', 'fecha_reserva', 'estado')
@@ -79,6 +86,49 @@ class VentaReservaAdmin(admin.ModelAdmin):
         descripcion = f"Se ha eliminado la venta/reserva con ID {obj.id} del cliente {obj.cliente.nombre}."
         registrar_movimiento(obj.cliente, "Eliminación de Venta/Reserva", descripcion, request.user)
         super().delete_model(request, obj)
+
+    # Mostrar categorías de servicios
+    def mostrar_categoria_servicios(self, obj):
+        return ", ".join([servicio.categoria.nombre for servicio in obj.servicios.all() if servicio.categoria])
+    mostrar_categoria_servicios.short_description = 'Categoría de Servicios'
+
+    # Mostrar nombres de servicios
+    def mostrar_nombre_servicios(self, obj):
+        return ", ".join([servicio.nombre for servicio in obj.servicios.all()])
+    mostrar_nombre_servicios.short_description = 'Servicios'
+
+    # Mostrar cantidad de servicios
+    def mostrar_cantidad_servicios(self, obj):
+        return ", ".join([str(reserva_servicio.cantidad_personas) for reserva_servicio in obj.reservaservicios.all()])
+    mostrar_cantidad_servicios.short_description = 'Cantidad de Servicios'
+
+    # Calcular total de servicios
+    def mostrar_total_servicios(self, obj):
+        total = sum([reserva_servicio.servicio.precio_base * reserva_servicio.cantidad_personas for reserva_servicio in obj.reservaservicios.all()])
+        return f"{total} CLP"
+    mostrar_total_servicios.short_description = 'Total de Servicios'
+
+    # Mostrar categorías de productos
+    def mostrar_categoria_productos(self, obj):
+        return ", ".join([producto.categoria.nombre for producto in obj.productos.all() if producto.categoria])
+    mostrar_categoria_productos.short_description = 'Categoría de Productos'
+
+    # Mostrar nombres de productos
+    def mostrar_nombre_productos(self, obj):
+        return ", ".join([producto.nombre for producto in obj.productos.all()])
+    mostrar_nombre_productos.short_description = 'Productos'
+
+    # Mostrar cantidad de productos
+    def mostrar_cantidad_productos(self, obj):
+        return ", ".join([str(reserva_producto.cantidad) for reserva_producto in obj.reservaproductos.all()])
+    mostrar_cantidad_productos.short_description = 'Cantidad de Productos'
+
+    # Calcular total de productos
+    def mostrar_total_productos(self, obj):
+        total = sum([reserva_producto.producto.precio_base * reserva_producto.cantidad for reserva_producto in obj.reservaproductos.all()])
+        return f"{total} CLP"
+    mostrar_total_productos.short_description = 'Total de Productos'
+
 
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
