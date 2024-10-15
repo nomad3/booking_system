@@ -58,29 +58,21 @@ def registrar_movimiento(cliente, tipo_movimiento, descripcion, usuario):
     )
 
 class VentaReservaAdmin(admin.ModelAdmin):
-    list_per_page = 20  # Muestra 20 registros por página
+    list_per_page = 50  
     autocomplete_fields = ['cliente']
     list_display = (
-        'id', 'cliente', 'fecha_reserva', 'estado',
-        'mostrar_categoria_servicios', 'mostrar_nombre_servicios',
-        'mostrar_cantidad_servicios', 'mostrar_total_servicios',
-        'mostrar_categoria_productos', 'mostrar_nombre_productos',
-        'mostrar_cantidad_productos', 'mostrar_total_productos',
+        'id', 'cliente', 'fecha_reserva', 'estado', 
+        'servicios_y_cantidades', 'productos_y_cantidades', 
+        'total_servicios', 'total_productos', 
         'total', 'pagado', 'saldo_pendiente'
     )
     readonly_fields = ('total', 'pagado', 'saldo_pendiente')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
     list_filter = ('servicios', 'fecha_reserva', 'estado')
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
+    list_per_page = 20  # Paginación
 
-    def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        # Utilizamos select_related para optimizar las relaciones ForeignKey
-        queryset = queryset.select_related('cliente').prefetch_related(
-            'productos', 'servicios', 'reservaproductos', 'reservaservicios'
-        )
-        return queryset
-
+    # Guardar cambios con registro de movimiento
     def save_model(self, request, obj, form, change):
         if change:
             tipo = "Actualización de Venta/Reserva"
@@ -91,67 +83,56 @@ class VentaReservaAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         registrar_movimiento(obj.cliente, tipo, descripcion, request.user)
 
+    # Eliminar con registro de movimiento
     def delete_model(self, request, obj):
         descripcion = f"Se ha eliminado la venta/reserva con ID {obj.id} del cliente {obj.cliente.nombre}."
         registrar_movimiento(obj.cliente, "Eliminación de Venta/Reserva", descripcion, request.user)
         super().delete_model(request, obj)
 
-    # Mostrar categorías de servicios
-    def mostrar_categoria_servicios(self, obj):
-        servicios = obj.servicios.all()
-        if servicios.exists():
-            return ", ".join([servicio.categoria.nombre for servicio in servicios if servicio.categoria])
-        return "Sin categorías"
+    # Mostrar servicios junto con cantidades en la misma fila
+    def servicios_y_cantidades(self, obj):
+        servicios_list = [
+            f"{reserva_servicio.servicio.nombre} (x{reserva_servicio.cantidad_personas})" 
+            for reserva_servicio in obj.reservaservicios.all()
+        ]
+        return ", ".join(servicios_list)
+    servicios_y_cantidades.short_description = 'Servicios y Cantidades'
 
-    # Mostrar nombres de servicios
-    def mostrar_nombre_servicios(self, obj):
-        servicios = obj.servicios.all()
-        if servicios.exists():
-            return ", ".join([servicio.nombre for servicio in servicios])
-        return "Sin servicios"
-
-    # Mostrar cantidad de servicios
-    def mostrar_cantidad_servicios(self, obj):
-        if obj.reservaservicios.exists():
-            return ", ".join([str(reserva_servicio.cantidad_personas) for reserva_servicio in obj.reservaservicios.all()])
-        return "Sin servicios"
+    # Mostrar productos junto con cantidades en la misma fila
+    def productos_y_cantidades(self, obj):
+        productos_list = [
+            f"{reserva_producto.producto.nombre} (x{reserva_producto.cantidad})" 
+            for reserva_producto in obj.reservaproductos.all()
+        ]
+        return ", ".join(productos_list)
+    productos_y_cantidades.short_description = 'Productos y Cantidades'
 
     # Calcular total de servicios
-    def mostrar_total_servicios(self, obj):
-        if obj.reservaservicios.exists():  # Verificamos si existen servicios antes de sumarlos
-            total = sum([reserva_servicio.servicio.precio_base * reserva_servicio.cantidad_personas for reserva_servicio in obj.reservaservicios.all()])
-            return f"{total} CLP"
-        return "0 CLP"  # En caso de que no haya servicios relacionados
-
-    # Mostrar categorías de productos
-    def mostrar_categoria_productos(self, obj):
-        productos = obj.productos.all()
-        if productos.exists():
-            return ", ".join([producto.categoria.nombre for producto in productos if producto.categoria])
-        return "Sin categorías"
-
-    # Mostrar nombres de productos
-    def mostrar_nombre_productos(self, obj):
-        productos = obj.productos.all()
-        if productos.exists():
-            return ", ".join([producto.nombre for producto in productos])
-        return "Sin productos"
-
-    # Mostrar cantidad de productos
-    def mostrar_cantidad_productos(self, obj):
-        if obj.reservaproductos.exists():
-            return ", ".join([str(reserva_producto.cantidad) for reserva_producto in obj.reservaproductos.all()])
-        return "Sin productos"
+    def total_servicios(self, obj):
+        total = sum(
+            reserva_servicio.servicio.precio_base * reserva_servicio.cantidad_personas 
+            for reserva_servicio in obj.reservaservicios.all()
+        )
+        return f"{total} CLP"
+    total_servicios.short_description = 'Total de Servicios'
 
     # Calcular total de productos
-    def mostrar_total_productos(self, obj):
-        if obj.reservaproductos.exists():
-            total = sum([reserva_producto.producto.precio_base * reserva_producto.cantidad for reserva_producto in obj.reservaproductos.all()])
-            return f"{total} CLP"
-        return "0 CLP"
+    def total_productos(self, obj):
+        total = sum(
+            reserva_producto.producto.precio_base * reserva_producto.cantidad 
+            for reserva_producto in obj.reservaproductos.all()
+        )
+        return f"{total} CLP"
+    total_productos.short_description = 'Total de Productos'
 
-    mostrar_total_productos.short_description = 'Total de Productos'
-    mostrar_total_servicios.short_description = 'Total de Servicios'
+    # Optimización de consultas con prefetch_related
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        queryset = queryset.prefetch_related(
+            'reservaproductos__producto',
+            'reservaservicios__servicio',
+        ).select_related('cliente')
+        return queryset
 
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
