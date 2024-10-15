@@ -32,23 +32,24 @@ from .serializers import (
 )
 
 def servicios_vendidos_view(request):
-    # Obtener los parámetros del filtro
-    fecha_inicio = request.GET.get('fecha_inicio')
-    fecha_fin = request.GET.get('fecha_fin')
+    # Obtener la fecha actual
+    fecha_hoy = timezone.now().date()
+
+    # Obtener los parámetros del filtro o establecer la fecha actual como predeterminada
+    fecha_inicio = request.GET.get('fecha_inicio', fecha_hoy.strftime('%Y-%m-%d'))
+    fecha_fin = request.GET.get('fecha_fin', fecha_hoy.strftime('%Y-%m-%d'))
     categoria_id = request.GET.get('categoria')
     venta_reserva_id = request.GET.get('venta_reserva_id')
+
+    # Convertir fechas de string a objetos datetime
+    fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+    fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
 
     # Consultar todos los servicios vendidos
     servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
 
-    # Filtrar por rango de fechas si está presente
-    if fecha_inicio:
-        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-        servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio)
-
-    if fecha_fin:
-        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
-        servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__lte=fecha_fin)
+    # Filtrar por rango de fechas
+    servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio_dt, fecha_agendamiento__lte=fecha_fin_dt)
 
     # Filtrar por categoría de servicio si está presente
     if categoria_id:
@@ -89,8 +90,8 @@ def servicios_vendidos_view(request):
     context = {
         'servicios': data,
         'categorias': categorias,
-        'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin - timedelta(days=1) if fecha_fin else None,
+        'fecha_inicio': fecha_inicio_dt.strftime('%Y-%m-%d'),
+        'fecha_fin': fecha_fin_dt.strftime('%Y-%m-%d'),
         'categoria_id': categoria_id,
         'venta_reserva_id': venta_reserva_id,
         'total_monto_vendido': total_monto_vendido  # Pasar el total del monto vendido al contexto
