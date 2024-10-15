@@ -60,17 +60,25 @@ def registrar_movimiento(cliente, tipo_movimiento, descripcion, usuario):
 class VentaReservaAdmin(admin.ModelAdmin):
     autocomplete_fields = ['cliente']
     list_display = (
-        'id', 'cliente', 'fecha_reserva', 'estado', 
-        'mostrar_categoria_servicios', 'mostrar_nombre_servicios', 
-        'mostrar_cantidad_servicios', 'mostrar_total_servicios', 
-        'mostrar_categoria_productos', 'mostrar_nombre_productos', 
-        'mostrar_cantidad_productos', 'mostrar_total_productos', 
+        'id', 'cliente', 'fecha_reserva', 'estado',
+        'mostrar_categoria_servicios', 'mostrar_nombre_servicios',
+        'mostrar_cantidad_servicios', 'mostrar_total_servicios',
+        'mostrar_categoria_productos', 'mostrar_nombre_productos',
+        'mostrar_cantidad_productos', 'mostrar_total_productos',
         'total', 'pagado', 'saldo_pendiente'
     )
     readonly_fields = ('total', 'pagado', 'saldo_pendiente')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
     list_filter = ('servicios', 'fecha_reserva', 'estado')
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        # Utilizamos select_related para optimizar las relaciones ForeignKey
+        queryset = queryset.select_related('cliente').prefetch_related(
+            'productos', 'servicios', 'reservaproductos', 'reservaservicios'
+        )
+        return queryset
 
     def save_model(self, request, obj, form, change):
         if change:
@@ -89,35 +97,44 @@ class VentaReservaAdmin(admin.ModelAdmin):
 
     # Mostrar categorías de servicios
     def mostrar_categoria_servicios(self, obj):
-        return ", ".join([servicio.categoria.nombre for servicio in obj.servicios.all() if servicio.categoria])
-    mostrar_categoria_servicios.short_description = 'Categoría de Servicios'
+        servicios = obj.servicios.all()
+        if servicios.exists():
+            return ", ".join([servicio.categoria.nombre for servicio in servicios if servicio.categoria])
+        return "Sin categorías"
 
     # Mostrar nombres de servicios
     def mostrar_nombre_servicios(self, obj):
-        return ", ".join([servicio.nombre for servicio in obj.servicios.all()])
-    mostrar_nombre_servicios.short_description = 'Servicios'
+        servicios = obj.servicios.all()
+        if servicios.exists():
+            return ", ".join([servicio.nombre for servicio in servicios])
+        return "Sin servicios"
 
     # Mostrar cantidad de servicios
     def mostrar_cantidad_servicios(self, obj):
         if obj.reservaservicios.exists():
-            return ", ".join([str(reserva_servicio.servicio.nombre) for reserva_servicio in obj.reservaservicios.all()])
+            return ", ".join([str(reserva_servicio.cantidad_personas) for reserva_servicio in obj.reservaservicios.all()])
         return "Sin servicios"
 
     # Calcular total de servicios
     def mostrar_total_servicios(self, obj):
-        total = sum([reserva_servicio.servicio.precio_base * reserva_servicio.cantidad_personas for reserva_servicio in obj.reservaservicios.all()])
-        return f"{total} CLP"
-    mostrar_total_servicios.short_description = 'Total de Servicios'
+        if obj.reservaservicios.exists():
+            total = sum([reserva_servicio.servicio.precio_base * reserva_servicio.cantidad_personas for reserva_servicio in obj.reservaservicios.all()])
+            return f"{total} CLP"
+        return "0 CLP"
 
     # Mostrar categorías de productos
     def mostrar_categoria_productos(self, obj):
-        return ", ".join([producto.categoria.nombre for producto in obj.productos.all() if producto.categoria])
-    mostrar_categoria_productos.short_description = 'Categoría de Productos'
+        productos = obj.productos.all()
+        if productos.exists():
+            return ", ".join([producto.categoria.nombre for producto in productos if producto.categoria])
+        return "Sin categorías"
 
     # Mostrar nombres de productos
     def mostrar_nombre_productos(self, obj):
-        return ", ".join([producto.nombre for producto in obj.productos.all()])
-    mostrar_nombre_productos.short_description = 'Productos'
+        productos = obj.productos.all()
+        if productos.exists():
+            return ", ".join([producto.nombre for producto in productos])
+        return "Sin productos"
 
     # Mostrar cantidad de productos
     def mostrar_cantidad_productos(self, obj):
@@ -127,10 +144,13 @@ class VentaReservaAdmin(admin.ModelAdmin):
 
     # Calcular total de productos
     def mostrar_total_productos(self, obj):
-        total = sum([reserva_producto.producto.precio_base * reserva_producto.cantidad for reserva_producto in obj.reservaproductos.all()])
-        return f"{total} CLP"
-    mostrar_total_productos.short_description = 'Total de Productos'
+        if obj.reservaproductos.exists():
+            total = sum([reserva_producto.producto.precio_base * reserva_producto.cantidad for reserva_producto in obj.reservaproductos.all()])
+            return f"{total} CLP"
+        return "0 CLP"
 
+    mostrar_total_productos.short_description = 'Total de Productos'
+    mostrar_total_servicios.short_description = 'Total de Servicios'
 
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
