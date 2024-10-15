@@ -120,12 +120,12 @@ class VentaReservaAdmin(admin.ModelAdmin):
 
     # Mostrar cantidad de productos
     def mostrar_cantidad_productos(self, obj):
-        return ", ".join([str(reserva_producto.cantidad) for reserva_producto in obj.reservaproductos.all()])
+        return ", ".join([str(reserva_producto.cantidad) for reserva_producto in obj.reservaprodutos.all()])
     mostrar_cantidad_productos.short_description = 'Cantidad de Productos'
 
     # Calcular total de productos
     def mostrar_total_productos(self, obj):
-        total = sum([reserva_producto.producto.precio_base * reserva_producto.cantidad for reserva_producto in obj.reservaproductos.all()])
+        total = sum([reserva_producto.producto.precio_base * reserva_producto.cantidad for reserva_producto in obj.reservaprodutos.all()])
         return f"{total} CLP"
     mostrar_total_productos.short_description = 'Total de Productos'
 
