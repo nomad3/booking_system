@@ -48,15 +48,15 @@ def servicios_vendidos_view(request):
     if isinstance(fecha_fin, str):
         fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
 
-    # Ajustar los límites de tiempo para incluir todo el día en el filtro
+    # Ajustar los límites de tiempo para incluir todo el día actual
     fecha_inicio = timezone.make_aware(datetime.combine(fecha_inicio, datetime.min.time()))
     fecha_fin = timezone.make_aware(datetime.combine(fecha_fin, datetime.max.time()))
 
     # Consultar todos los servicios vendidos
     servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
 
-    # Filtrar por rango de fechas
-    servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio, fecha_agendamiento__lte=fecha_fin)
+    # Filtrar por rango de fechas (ahora ajustado a las 00:00 - 23:59:59 del día seleccionado)
+    servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__date__gte=fecha_inicio.date(), fecha_agendamiento__date__lte=fecha_fin.date())
 
     # Filtrar por categoría de servicio si está presente
     if categoria_id:
