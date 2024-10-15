@@ -99,9 +99,9 @@ class VentaReservaAdmin(admin.ModelAdmin):
 
     # Mostrar cantidad de servicios
     def mostrar_cantidad_servicios(self, obj):
-    if obj.reservaservicios.exists():
-        return ", ".join([str(reserva_servicio.servicio.nombre) for reserva_servicio in obj.reservaservicios.all()])
-    return "Sin servicios"
+        if obj.reservaservicios.exists():
+            return ", ".join([str(reserva_servicio.servicio.nombre) for reserva_servicio in obj.reservaservicios.all()])
+        return "Sin servicios"
 
     # Calcular total de servicios
     def mostrar_total_servicios(self, obj):
@@ -120,10 +120,10 @@ class VentaReservaAdmin(admin.ModelAdmin):
     mostrar_nombre_productos.short_description = 'Productos'
 
     # Mostrar cantidad de productos
-def mostrar_cantidad_productos(self, obj):
-    if obj.reservaproductos.exists():
-        return ", ".join([str(reserva_producto.cantidad) for reserva_producto in obj.reservaproductos.all()])
-    return "Sin productos"
+    def mostrar_cantidad_productos(self, obj):
+        if obj.reservaproductos.exists():
+            return ", ".join([str(reserva_producto.cantidad) for reserva_producto in obj.reservaproductos.all()])
+        return "Sin productos"
 
     # Calcular total de productos
     def mostrar_total_productos(self, obj):
