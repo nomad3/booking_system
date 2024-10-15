@@ -183,7 +183,7 @@ class MovimientoCliente(models.Model):
     usuario = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
 class ReservaProducto(models.Model):
-    venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaproductos')
+    venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaprodutos')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField()
 
