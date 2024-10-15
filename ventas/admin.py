@@ -58,6 +58,7 @@ def registrar_movimiento(cliente, tipo_movimiento, descripcion, usuario):
     )
 
 class VentaReservaAdmin(admin.ModelAdmin):
+    list_per_page = 20  # Muestra 20 registros por página
     autocomplete_fields = ['cliente']
     list_display = (
         'id', 'cliente', 'fecha_reserva', 'estado',
@@ -117,10 +118,10 @@ class VentaReservaAdmin(admin.ModelAdmin):
 
     # Calcular total de servicios
     def mostrar_total_servicios(self, obj):
-        if obj.reservaservicios.exists():
+        if obj.reservaservicios.exists():  # Verificamos si existen servicios antes de sumarlos
             total = sum([reserva_servicio.servicio.precio_base * reserva_servicio.cantidad_personas for reserva_servicio in obj.reservaservicios.all()])
             return f"{total} CLP"
-        return "0 CLP"
+        return "0 CLP"  # En caso de que no haya servicios relacionados
 
     # Mostrar categorías de productos
     def mostrar_categoria_productos(self, obj):
