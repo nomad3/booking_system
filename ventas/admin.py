@@ -105,17 +105,22 @@ class VentaReservaAdmin(admin.ModelAdmin):
         # Calcular el monto total en el rango de fechas
         total_en_rango = qs.aggregate(total=Sum('total'))['total'] or 0
 
-        # Crea una copia del extra_context existente o un diccionario vacío
-        extra_context = extra_context.copy() if extra_context else {}
+        extra_context = extra_context or {}
+        extra_context['total_en_rango'] = total_en_rango
 
-        # Agrega el queryset al ChangeList dentro de extra_context
-        extra_context['cl'] = extra_context.get('cl', {})
-        extra_context['cl']['queryset'] = qs
+        # Pasar el queryset filtrado al contexto
+        extra_context = extra_context or {}
+        extra_context['cl'] = {'queryset': qs} # cl es el ChangeList que usa Django Admin
+
+        # Pasar todas las categorías y servicios al contexto, no solo las filtradas
+        extra_context['categorias_servicio'] = CategoriaServicio.objects.all()  # <-- Corrección
+        extra_context['servicios'] = Servicio.objects.all() # <-- Corrección
+
 
         # Pasar las fechas seleccionadas o la fecha actual al contexto
-        fecha_actual = date.today().strftime('%Y-%m-%d')
+        fecha_actual = date.today().strftime('%Y-%m-%d') # Formato para el input date
         extra_context['fecha_inicio'] = fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else fecha_actual
-        extra_context['fecha_fin'] = fecha_fin.strftime('%Y-%m-%d') if fecha_fin else fecha_actual
+        extra_context['fecha_fin'] = fecha_fin.strftime('%Y-%m-%d') if fecha_fin else fecha_actual # Fecha fin por defecto hoy
 
         # Resto del contexto
         extra_context['total_en_rango'] = total_en_rango
@@ -123,7 +128,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
         extra_context['servicios'] = Servicio.objects.all()
 
         return super().changelist_view(request, extra_context=extra_context)
-    
+ 
     # Guardar cambios con registro de movimiento
     def save_model(self, request, obj, form, change):
         if change:
