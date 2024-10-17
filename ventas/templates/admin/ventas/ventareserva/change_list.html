@@ -1,6 +1,7 @@
 {% extends 'admin/change_list.html' %}
 
-{% block date_hierarchy %}{% endblock %} {# Elimina la jerarquía de fechas #}
+{% block date_hierarchy %}{% endblock %}
+
 
 {% block content %}
     <div style="margin-bottom: 20px;">
@@ -9,33 +10,27 @@
             <select name="categoria_servicio" id="categoria_servicio">
                 <option value="">Todos</option>
                 {% for categoria in categorias_servicio %}
-                    <option value="{{ categoria.id }}" {% if categoria.id == request.GET.categoria_servicio %}selected{% endif %}>{{ categoria.nombre }}</option>
+                    <option value="{{ categoria.id }}" {% if categoria.id|stringformat:"s" == request.GET.categoria_servicio %}selected{% endif %}>{{ categoria.nombre }}</option>
                 {% endfor %}
             </select>
-    
 
             <label for="servicio">Servicio:</label>
             <select name="servicio" id="servicio">
                 <option value="">Todos</option>
                 {% for servicio in servicios %}
-                    <option value="{{ servicio.id }}" {% if servicio.id == request.GET.servicio %}selected{% endif %}>{{ servicio.nombre }}</option>
+                    <option value="{{ servicio.id }}" {% if servicio.id|stringformat:"s" == request.GET.servicio %}selected{% endif %}>{{ servicio.nombre }}</option>
                 {% endfor %}
             </select>
 
-
             <label for="fecha_inicio">Fecha Inicio:</label>
-            <input type="date" name="fecha_inicio" id="fecha_inicio" value="{{ fecha_inicio }}">
-
+            <input type="date" name="fecha_inicio" id="fecha_inicio" value="{% if fecha_inicio %}{{ fecha_inicio }}{% else %}{{ today|date:'Y-m-d' }}{% endif %}">
 
             <label for="fecha_fin">Fecha Fin:</label>
             <input type="date" name="fecha_fin" id="fecha_fin" value="{{ fecha_fin }}">
 
-
             <button type="submit">Filtrar</button>
-
         </form>
         <p><strong>Total en el rango de fechas:</strong> {{ total_en_rango }} CLP</p>
     </div>
-
-    {{ block.super }} 
+    {{ block.super }}
 {% endblock %}
