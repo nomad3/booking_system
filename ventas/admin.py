@@ -108,16 +108,25 @@ class VentaReservaAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['total_en_rango'] = total_en_rango
 
+        # Pasar el queryset filtrado al contexto
+        extra_context = extra_context or {}
+        extra_context['cl'] = {'queryset': qs} # cl es el ChangeList que usa Django Admin
+
         # Pasar todas las categorías y servicios al contexto, no solo las filtradas
         extra_context['categorias_servicio'] = CategoriaServicio.objects.all()  # <-- Corrección
         extra_context['servicios'] = Servicio.objects.all() # <-- Corrección
 
 
-        # Pasar las fechas seleccionadas al contexto (o la fecha de hoy si no se seleccionaron)
-        extra_context['fecha_inicio'] = fecha_inicio.strftime('%Y-%m-%d')
-        extra_context['fecha_fin'] = fecha_fin.strftime('%Y-%m-%d') if fecha_fin else ''
+        # Pasar las fechas seleccionadas o la fecha actual al contexto
+        fecha_actual = date.today().strftime('%Y-%m-%d') # Formato para el input date
+        extra_context['fecha_inicio'] = fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else fecha_actual
+        extra_context['fecha_fin'] = fecha_fin.strftime('%Y-%m-%d') if fecha_fin else fecha_actual # Fecha fin por defecto hoy
 
-        # Llamar a changelist_view del padre con el queryset filtrado
+        # Resto del contexto
+        extra_context['total_en_rango'] = total_en_rango
+        extra_context['categorias_servicio'] = CategoriaServicio.objects.all()
+        extra_context['servicios'] = Servicio.objects.all()
+
         return super().changelist_view(request, extra_context=extra_context)
  
     # Guardar cambios con registro de movimiento
