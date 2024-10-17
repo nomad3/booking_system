@@ -6,6 +6,7 @@ from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=100)
@@ -120,31 +121,29 @@ class VentaReserva(models.Model):
         self.calcular_total() # Recalcula el total después de cada pago, incluyendo descuentos.
 
     def agregar_producto(self, producto, cantidad):
-        # Asegurar la reducción de inventario
-        if cantidad > producto.cantidad_disponible:  # Verifica antes de reducir
-           raise ValueError("No hay suficiente inventario disponible para este producto.")
-
-        self.productos.add(producto, through_defaults={'cantidad': cantidad})
-        producto.reducir_inventario(cantidad)
-        self.calcular_total()
+        with transaction.atomic():  # Asegura la consistencia de los datos
+            if cantidad > producto.cantidad_disponible:
+                raise ValueError("No hay suficiente inventario disponible para este producto.")
+            self.productos.add(producto, through_defaults={'cantidad': cantidad})
+            producto.reducir_inventario(cantidad)
+            self.calcular_total()  # <-- Llama a calcular_total aquí
 
     def agregar_servicio(self, servicio, fecha_agendamiento, cantidad_personas=1):
-        duracion_servicio = servicio.duracion
-        fecha_fin = fecha_agendamiento + duracion_servicio
+        with transaction.atomic():
+            duracion_servicio = servicio.duracion
+            fecha_fin = fecha_agendamiento + duracion_servicio
 
-        if ReservaServicio.objects.filter(servicio=servicio).filter(
-            fecha_agendamiento__lt=fecha_fin,
-            fecha_agendamiento__gte=fecha_agendamiento - timedelta(hours=duracion_servicio.total_seconds() / 3600)
-        ).exists():
-            raise ValidationError(f"El servicio {servicio.nombre} ya está reservado entre {fecha_agendamiento} y {fecha_fin}. Por favor, elige otro horario.")
-        
-        # Añadimos el servicio usando el modelo intermedio ReservaServicio
-        self.servicios.add(servicio, through_defaults={
-            'fecha_agendamiento': fecha_agendamiento,
-            'cantidad_personas': cantidad_personas
-        })
-        self.calcular_total()
-        self.actualizar_saldo()
+            if ReservaServicio.objects.filter(servicio=servicio).filter(
+                fecha_agendamiento__lt=fecha_fin,
+                fecha_agendamiento__gte=fecha_agendamiento - timedelta(hours=duracion_servicio.total_seconds() / 3600)
+            ).exists():
+                raise ValidationError(f"El servicio {servicio.nombre} ya está reservado entre {fecha_agendamiento} y {fecha_fin}. Por favor, elige otro horario.")
+
+            self.servicios.add(servicio, through_defaults={
+                'fecha_agendamiento': fecha_agendamiento,
+                'cantidad_personas': cantidad_personas
+            })
+            self.calcular_total() # <-- Llama a calcular_total aquí
 
 class Pago(models.Model):
     METODOS_PAGO = [
@@ -169,8 +168,9 @@ class Pago(models.Model):
         return f"Pago de {self.monto} para {self.venta_reserva}"
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.venta_reserva.calcular_total()
+        with transaction.atomic():  # Asegura la consistencia de los datos
+            super().save(*args, **kwargs)
+            self.venta_reserva.calcular_total()
 
 class MovimientoCliente(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)

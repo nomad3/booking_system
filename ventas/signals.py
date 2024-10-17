@@ -155,3 +155,11 @@ def registrar_movimiento_eliminacion_pago(sender, instance, **kwargs):
     instance.venta_reserva.pagado -= instance.monto
     instance.venta_reserva.actualizar_saldo()
     instance.venta_reserva.calcular_total()  # Recalcular el total
+
+@receiver(post_delete, sender=ReservaProducto)
+def actualizar_total_al_eliminar_producto(sender, instance, **kwargs):
+    instance.venta_reserva.calcular_total()
+
+@receiver(post_delete, sender=ReservaServicio)
+def actualizar_total_al_eliminar_servicio(sender, instance, **kwargs):
+    instance.venta_reserva.calcular_total()
