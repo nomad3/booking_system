@@ -33,7 +33,7 @@ from .serializers import (
 
 def servicios_vendidos_view(request):
     # Obtener la fecha actual con la zona horaria correcta
-    hoy = timezone.localtime().date()
+    hoy = timezone.localdate()
 
     # Obtener los parámetros del filtro, usando la fecha actual por defecto
     fecha_inicio = request.GET.get('fecha_inicio', hoy)
@@ -48,14 +48,15 @@ def servicios_vendidos_view(request):
     if isinstance(fecha_fin, str):
         fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
 
-    # Asegurar que la fecha de fin sea el final del día (23:59:59)
-    fecha_fin = fecha_fin + timedelta(days=1)
+    # Convertir las fechas de inicio y fin a objetos datetime con zona horaria local
+    fecha_inicio_dt = timezone.make_aware(datetime.combine(fecha_inicio, datetime.min.time()))
+    fecha_fin_dt = timezone.make_aware(datetime.combine(fecha_fin, datetime.max.time()))
 
     # Consultar todos los servicios vendidos
     servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
 
-    # Filtrar por rango de fechas (usando __date para comparar solo la parte de la fecha)
-    servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__date__gte=fecha_inicio, fecha_agendamiento__date__lt=fecha_fin)
+    # Filtrar por rango de fechas (usando __gte y __lte para comparar correctamente)
+    servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio_dt, fecha_agendamiento__lte=fecha_fin_dt)
 
     # Filtrar por categoría de servicio si está presente
     if categoria_id:
@@ -97,7 +98,7 @@ def servicios_vendidos_view(request):
         'servicios': data,
         'categorias': categorias,
         'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin - timedelta(days=1),  # Ajustar para que se muestre el día correcto en la UI
+        'fecha_fin': fecha_fin,
         'categoria_id': categoria_id,
         'venta_reserva_id': venta_reserva_id,
         'total_monto_vendido': total_monto_vendido

@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=100)
@@ -91,20 +92,17 @@ class VentaReserva(models.Model):
         return f"Venta/Reserva #{self.id} de {self.cliente}"
 
     def calcular_total(self):
-        total = 0
-        # Sumar los productos
-        for reserva_producto in self.reservaproductos.all():
-            total += reserva_producto.producto.precio_base * reserva_producto.cantidad
+        total_productos = self.reservaproductos.aggregate(total=models.Sum(models.F('producto__precio_base') * models.F('cantidad')))['total'] or 0
+        total_servicios = self.reservaservicios.aggregate(total=models.Sum(models.F('servicio__precio_base') * models.F('cantidad_personas')))['total'] or 0
+        total_pagos_descuentos = self.pagos.filter(metodo_pago='descuento').aggregate(total=models.Sum('monto'))['total'] or 0  # Considerar descuentos como pagos negativos
 
-        # Sumar los servicios, usando el método `calcular_precio` de `ReservaServicio`
-        for reserva_servicio in self.reservaservicios.all():
-            total += reserva_servicio.calcular_precio()
-
-        self.total = total
-        self.saldo_pendiente = total - self.pagado
+        self.total = total_productos + total_servicios - total_pagos_descuentos
         self.save()
+        self.actualizar_saldo()  # Llama a actualizar_saldo después de calcular_total
 
     def actualizar_saldo(self):
+        total_pagos = self.pagos.exclude(metodo_pago='descuento').aggregate(total=models.Sum('monto'))['total'] or 0
+        self.pagado = total_pagos
         self.saldo_pendiente = self.total - self.pagado
         if self.saldo_pendiente <= 0:
             self.estado = 'pagado'
@@ -115,21 +113,20 @@ class VentaReserva(models.Model):
         self.save()
 
     def registrar_pago(self, monto, metodo_pago):
-        nuevo_pago = Pago.objects.create(
-            venta_reserva=self,
-            monto=monto,
-            metodo_pago=metodo_pago
-        )
-        self.pagado += monto
-        self.actualizar_saldo()
-        return nuevo_pago
+        if metodo_pago == 'descuento' and monto > self.total:
+            raise ValidationError("El descuento no puede ser mayor al total de la venta.")  # Validación descuento
+            
+        Pago.objects.create(venta_reserva=self, monto=monto, metodo_pago=metodo_pago)
+        self.calcular_total() # Recalcula el total después de cada pago, incluyendo descuentos.
 
     def agregar_producto(self, producto, cantidad):
         # Asegurar la reducción de inventario
+        if cantidad > producto.cantidad_disponible:  # Verifica antes de reducir
+           raise ValueError("No hay suficiente inventario disponible para este producto.")
+
         self.productos.add(producto, through_defaults={'cantidad': cantidad})
         producto.reducir_inventario(cantidad)
         self.calcular_total()
-        self.actualizar_saldo()
 
     def agregar_servicio(self, servicio, fecha_agendamiento, cantidad_personas=1):
         duracion_servicio = servicio.duracion
@@ -172,8 +169,8 @@ class Pago(models.Model):
         return f"Pago de {self.monto} para {self.venta_reserva}"
 
     def save(self, *args, **kwargs):
-        # Quitamos la lógica de sumar el pago aquí
         super().save(*args, **kwargs)
+        self.venta_reserva.calcular_total()
 
 class MovimientoCliente(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
