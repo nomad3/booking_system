@@ -163,3 +163,8 @@ def actualizar_total_al_eliminar_producto(sender, instance, **kwargs):
 @receiver(post_delete, sender=ReservaServicio)
 def actualizar_total_al_eliminar_servicio(sender, instance, **kwargs):
     instance.venta_reserva.calcular_total()
+
+@receiver(post_save, sender=ReservaServicio)
+def actualizar_total_al_guardar_servicio(sender, instance, created, **kwargs):
+    if created or instance.cantidad_personas_changed():
+        instance.venta_reserva.calcular_total()
