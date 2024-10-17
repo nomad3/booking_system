@@ -68,7 +68,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
     )
     readonly_fields = ('total', 'pagado', 'saldo_pendiente')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
-    list_filter = ('servicios', 'fecha_reserva', 'estado')
+    list_filter = ()  # Quita el filtro por defecto
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
     list_per_page = 20  # Paginación
 
