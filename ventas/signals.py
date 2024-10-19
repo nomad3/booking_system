@@ -185,35 +185,42 @@ def actualizar_total_venta_reserva(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=ReservaProducto)
 def actualizar_inventario(sender, instance, created, raw, using, update_fields, **kwargs):
-    if created:
+    if created and not raw: #previene error si se importa una reserva que tiene productos
         with transaction.atomic():
-                instance.producto.reducir_inventario(instance.cantidad)
+            instance.producto.reducir_inventario(instance.cantidad)
 
-    elif not raw:  # Asegúrate de que no sea una creación raw
-        if instance.tracker.has_changed('cantidad'):  # Verifica si la cantidad ha cambiado desde el formulario
-            with transaction.atomic():
-                cantidad_anterior = instance.tracker.previous('cantidad')
-                if cantidad_anterior is not None:
-                    diferencia = instance.cantidad - cantidad_anterior
+    elif not raw: # and not created: #Si se modifica la reserva que ya existe
+        ReservaProducto = apps.get_model('ventas', 'ReservaProducto')
+        try:
+            reserva_producto_anterior = ReservaProducto.objects.using(using).get(pk=instance.pk)
+            cantidad_anterior = reserva_producto_anterior.cantidad
 
-                    if diferencia > 0:
-                        instance.producto.reducir_inventario(diferencia)
+        except ReservaProducto.DoesNotExist:
+            return # retorna para evitar el error cuando recien se crea el modelo de ReservaProducto
 
-                    elif diferencia < 0:
-                        instance.producto.cantidad_disponible -= diferencia #Resta la diferencia, si la cantidad disminuye la diferencia es negativa, se convierte en positivo y se suma al inventario
-                        instance.producto.save()
+        diferencia = instance.cantidad - cantidad_anterior
 
+        with transaction.atomic():
+            if diferencia > 0:
+                instance.producto.reducir_inventario(diferencia)
 
+            elif diferencia < 0:
+                instance.producto.cantidad_disponible += abs(diferencia) #Suma la diferencia, si la cantidad disminuye la diferencia es negativa, se convierte en positivo y se suma al inventario
+                instance.producto.save()
+
+#signal para ventareserva m2m con productos
 @receiver(m2m_changed, sender=VentaReserva.productos.through)
 def actualizar_inventario_m2m(sender, instance, action, **kwargs):
     if action == 'post_add':
-        for pk in kwargs['pk_set']:
-            producto = Producto.objects.get(pk=pk)
-            cantidad = ReservaProducto.objects.get(venta_reserva=instance, producto=producto).cantidad
-            producto.reducir_inventario(cantidad)
-            
-    elif action in ('post_remove', 'post_clear'): #Cuando se eliminan productos directamente desde la ventareserva
-        if kwargs.get('pk_set'): #previene error en las nuevas reservas cuando recien se crean
+        if kwargs.get('pk_set'):
+            for pk in kwargs['pk_set']:
+                producto = Producto.objects.get(pk=pk)
+                cantidad = ReservaProducto.objects.get(venta_reserva=instance, producto=producto).cantidad
+                producto.reducir_inventario(cantidad)
+
+
+    elif action in ('post_remove', 'post_clear'):  # Restaurar inventario al eliminar productos de VentaReserva
+        if kwargs.get('pk_set'):
             for pk in kwargs['pk_set']:
                 try:
                     producto = Producto.objects.get(pk=pk)
@@ -240,7 +247,7 @@ def actualizar_inventario_post_save(sender, instance, created, raw, using, updat
                     instance.producto.cantidad_disponible -= diferencia
                     instance.producto.save()
 
-@receiver(pre_delete, sender=ReservaProducto)  # Nueva señal pre_delete
+@receiver(pre_delete, sender=ReservaProducto)
 def restaurar_inventario(sender, instance, **kwargs):
     with transaction.atomic():
         instance.producto.cantidad_disponible += instance.cantidad
