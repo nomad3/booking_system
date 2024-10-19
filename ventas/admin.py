@@ -140,7 +140,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
         return queryset
 
     def save_related(self, request, form, formsets, change):
-            super().save_related(request, form, formsets, change)
+            super().save_related(request, form, formsets, change)  # Guarda los inlines primero
 
             venta_reserva = form.instance
             with transaction.atomic():
@@ -150,7 +150,13 @@ class VentaReservaAdmin(admin.ModelAdmin):
                             if inline_form.has_changed():
                                 if inline_form.cleaned_data:
                                     cantidad = inline_form.cleaned_data.get('cantidad')
-                                    producto = inline_form.cleaned_data.get('producto')
+                                    producto_id = inline_form.cleaned_data.get('producto')
+
+                                    if producto_id:  # Verifica si producto_id no es None
+                                        try:
+                                            producto = Producto.objects.get(pk=producto_id)
+                                        except Producto.DoesNotExist:
+                                            continue  # Ignora y continúa si el producto no existe
 
                                     try:
                                         cantidad_anterior = ReservaProducto.objects.get(pk=inline_form.instance.pk).cantidad
@@ -162,13 +168,12 @@ class VentaReservaAdmin(admin.ModelAdmin):
                                     if diferencia > 0:
                                         producto.reducir_inventario(diferencia)
                                     elif diferencia < 0:
-                                        producto.cantidad_disponible -= diferencia  # Restamos para sumar al inventario
+                                        producto.cantidad_disponible -= diferencia
                                         producto.save()
                                     elif inline_form.instance.pk is None:  # Nueva instancia
-                                        producto.reducir_inventario(cantidad)  # Reduce el inventario
+                                        producto.reducir_inventario(cantidad)
 
                 venta_reserva.calcular_total()  # Recalcula el total
-
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
 
