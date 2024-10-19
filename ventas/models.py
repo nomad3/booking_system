@@ -113,6 +113,9 @@ class VentaReserva(models.Model):
             self.estado = 'pendiente'
         self.save()
 
+    def actualizar_total(self):
+        self.calcular_total()
+
     def registrar_pago(self, monto, metodo_pago):
         if metodo_pago == 'descuento' and monto > self.total:
             raise ValidationError("El descuento no puede ser mayor al total de la venta.")  # Validación descuento
