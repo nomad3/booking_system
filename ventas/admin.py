@@ -160,7 +160,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
 
                                     try:
                                         cantidad_anterior = ReservaProducto.objects.get(
-                                            producto=producto,  # <-- Usa la instancia del producto o producto.pk
+                                            producto_id=producto.pk,  # <-- Usa producto.pk (o producto.id)
                                             pk=inline_form.instance.pk
                                         ).cantidad
                                     except ReservaProducto.DoesNotExist:
