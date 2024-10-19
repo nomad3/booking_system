@@ -32,12 +32,10 @@ class Producto(models.Model):
     def __str__(self):
         return self.nombre
 
-def reducir_inventario(self, cantidad):
-        print(f"Reduciendo inventario de {self.nombre} en {cantidad} (antes: {self.cantidad_disponible})")
+    def reducir_inventario(self, cantidad):
         if self.cantidad_disponible >= cantidad:
             self.cantidad_disponible -= cantidad
             self.save()
-            print(f"Inventario de {self.nombre} actualizado (después: {self.cantidad_disponible})")
         else:
             raise ValueError('No hay suficiente inventario disponible.')
 
