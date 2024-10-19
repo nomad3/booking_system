@@ -167,16 +167,17 @@ def actualizar_total_al_eliminar_servicio(sender, instance, **kwargs):
     instance.venta_reserva.calcular_total()
 
 @receiver(post_save, sender=ReservaServicio)
-def actualizar_total_al_guardar_servicio(sender, instance, created, raw, using, update_fields, **kwargs):  # Agrega raw y using
+def actualizar_total_al_guardar_servicio(sender, instance, created, raw, using, update_fields, **kwargs):
     if created:
         instance.venta_reserva.calcular_total()
-    elif not raw:  # Verifica que no sea una creación raw
+    elif not raw:
         try:
             anterior_reserva_servicio = ReservaServicio.objects.using(using).get(pk=instance.pk)
-            if anterior_reserva_servicio.cantidad_personas != instance.cantidad_personas or anterior_reserva_servicio.servicio != instance.servicio:
+            if (anterior_reserva_servicio.cantidad_personas != instance.cantidad_personas or
+                    anterior_reserva_servicio.servicio != instance.servicio):
                 instance.venta_reserva.calcular_total()
         except ReservaServicio.DoesNotExist:
-            pass  # La instancia no existía antes, probablemente creada a través del inline
+            pass
 
 @receiver(post_save, sender=ReservaProducto)
 @receiver(post_save, sender=ReservaServicio)
@@ -244,11 +245,11 @@ def actualizar_inventario_y_total(sender, instance, created, raw, using, update_
             usuario=usuario,
             fecha_movimiento=timezone.now()
         )
-        if not raw: #para que no descuente dos veces cuando se crea desde la importación de reservas
+        if not raw:
             with transaction.atomic():
                 instance.producto.reducir_inventario(instance.cantidad)
-
-    elif not raw and instance.tracker.has_changed('cantidad'):  #Verifica si la cantidad ha cambiado y si no es raw
+    elif not raw and instance.tracker.has_changed('cantidad'):
+        ReservaProducto = apps.get_model('ventas', 'ReservaProducto')
         tipo = 'Actualización de Producto en Venta/Reserva'
         descripcion = f"Se ha actualizado {instance.cantidad} x {instance.producto.nombre} en la venta/reserva #{instance.venta_reserva.id}."
         MovimientoCliente.objects.create(
@@ -259,22 +260,26 @@ def actualizar_inventario_y_total(sender, instance, created, raw, using, update_
             fecha_movimiento=timezone.now()
         )
 
-        cantidad_anterior = instance.tracker.previous('cantidad')
-        if cantidad_anterior is not None:
-            diferencia = instance.cantidad - cantidad_anterior
+        try:
+            reserva_producto_anterior = ReservaProducto.objects.using(using).get(pk=instance.pk)
+            cantidad_anterior = reserva_producto_anterior.cantidad
 
-            with transaction.atomic():
-                if diferencia > 0:
-                    instance.producto.reducir_inventario(diferencia)
+        except ReservaProducto.DoesNotExist:
+            return  # retorna para evitar el error cuando recien se crea el modelo de ReservaProducto
 
-                elif diferencia < 0:
-                    instance.producto.cantidad_disponible += abs(diferencia)
-                    instance.producto.save()
+        diferencia = instance.cantidad - cantidad_anterior
+
+        with transaction.atomic():
+            if diferencia > 0:
+                instance.producto.reducir_inventario(diferencia)
+
+            elif diferencia < 0:
+                instance.producto.cantidad_disponible += abs(diferencia)
+                instance.producto.save()
     
-    #actualizar total despues de crear o modificar cantidad
     if not raw:
         instance.venta_reserva.actualizar_total()
-        instance.venta_reserva.save()
+        instance.venta_reserva.save() # Actualiza el total de la VentaReserva
 
 @receiver(pre_delete, sender=ReservaProducto)
 def restaurar_inventario_y_total(sender, instance, **kwargs):
@@ -288,8 +293,12 @@ def restaurar_inventario_y_total(sender, instance, **kwargs):
         usuario=usuario,
         fecha_movimiento=timezone.now()
     )
+    with transaction.atomic():
+        instance.producto.cantidad_disponible += instance.cantidad
+        instance.producto.save()
+        instance.venta_reserva.calcular_total() # Actualiza el total de la VentaReserva
 
-@receiver(m2m_changed, sender=VentaReserva.productos.through)
+@receiver(m2m_changed, sender=VentaReserva.productos.through)  # Signal para cuando se eliminan mediante m2m
 def actualizar_inventario_m2m(sender, instance, action, **kwargs):
     if action == 'post_clear':  # Restaurar inventario al borrar todos los productos
         if kwargs.get('pk_set'): #Para que no tire error si es una reserva nueva
