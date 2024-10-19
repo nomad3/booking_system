@@ -1,4 +1,4 @@
-from django.db.models.signals import pre_delete, post_save, post_delete, m2m_changed
+from django.db.models.signals import post_save, post_delete, m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
 from django.db import transaction
@@ -211,37 +211,13 @@ def actualizar_inventario_m2m(sender, instance, action, **kwargs):
             producto = Producto.objects.get(pk=pk)
             cantidad = ReservaProducto.objects.get(venta_reserva=instance, producto=producto).cantidad
             producto.reducir_inventario(cantidad)
-            
-    elif action in ('post_remove', 'post_clear'): #Cuando se eliminan productos directamente desde la ventareserva
-        if kwargs.get('pk_set'): #previene error en las nuevas reservas cuando recien se crean
-            for pk in kwargs['pk_set']:
-                try:
-                    producto = Producto.objects.get(pk=pk)
-                    reserva_producto = ReservaProducto.objects.get(venta_reserva=instance, producto=producto)
-                    cantidad = reserva_producto.cantidad
-                    producto.cantidad_disponible += cantidad
-                    producto.save()
-                except ReservaProducto.DoesNotExist:
-                    pass
-
-@receiver(post_save, sender=ReservaProducto)
-def actualizar_inventario_post_save(sender, instance, created, raw, using, update_fields, **kwargs):
-    if created:
-        with transaction.atomic():
-            instance.producto.reducir_inventario(instance.cantidad)
-    elif not raw and instance.tracker.has_changed('cantidad'):
-        with transaction.atomic():
-            cantidad_anterior = instance.tracker.previous('cantidad')
-            if cantidad_anterior is not None:
-                diferencia = instance.cantidad - cantidad_anterior
-                if diferencia > 0:
-                    instance.producto.reducir_inventario(diferencia)
-                elif diferencia < 0:
-                    instance.producto.cantidad_disponible -= diferencia
-                    instance.producto.save()
-
-@receiver(pre_delete, sender=ReservaProducto)  # Nueva señal pre_delete
-def restaurar_inventario(sender, instance, **kwargs):
-    with transaction.atomic():
-        instance.producto.cantidad_disponible += instance.cantidad
-        instance.producto.save()
+    elif action == 'post_remove':  # Restaurar inventario al eliminar productos
+        for pk in kwargs['pk_set']:
+            producto = Producto.objects.get(pk=pk)
+            cantidad = ReservaProducto.objects.filter(venta_reserva=instance, producto=producto).first().cantidad
+            producto.cantidad_disponible += cantidad
+            producto.save()
+    elif action == 'post_clear':  # Restaurar inventario al borrar todos los productos
+        for reserva_producto in ReservaProducto.objects.filter(venta_reserva=instance):
+            reserva_producto.producto.cantidad_disponible += reserva_producto.cantidad
+            reserva_producto.producto.save()
