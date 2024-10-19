@@ -190,18 +190,19 @@ def actualizar_inventario(sender, instance, created, raw, using, update_fields, 
                 instance.producto.reducir_inventario(instance.cantidad)
 
     elif not raw:  # Asegúrate de que no sea una creación raw
-        try:
-            reserva_producto_anterior = ReservaProducto.objects.using(using).get(pk=instance.pk)
-            cantidad_anterior = reserva_producto_anterior.cantidad
-            diferencia = instance.cantidad - cantidad_anterior
+        if instance.tracker.has_changed('cantidad'):  # Verifica si la cantidad ha cambiado desde el formulario
             with transaction.atomic():
-                if diferencia > 0:
-                    instance.producto.reducir_inventario(diferencia)
-                elif diferencia < 0:
-                    instance.producto.cantidad_disponible -= diferencia
-                    instance.producto.save()
-        except ReservaProducto.DoesNotExist:
-            pass
+                cantidad_anterior = instance.tracker.previous('cantidad')
+                if cantidad_anterior is not None:
+                    diferencia = instance.cantidad - cantidad_anterior
+
+                    if diferencia > 0:
+                        instance.producto.reducir_inventario(diferencia)
+
+                    elif diferencia < 0:
+                        instance.producto.cantidad_disponible -= diferencia #Resta la diferencia, si la cantidad disminuye la diferencia es negativa, se convierte en positivo y se suma al inventario
+                        instance.producto.save()
+
 
 @receiver(m2m_changed, sender=VentaReserva.productos.through)
 def actualizar_inventario_m2m(sender, instance, action, **kwargs):
