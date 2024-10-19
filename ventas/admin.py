@@ -73,59 +73,59 @@ class VentaReservaAdmin(admin.ModelAdmin):
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
     list_per_page = 20  # Paginación
 
-def changelist_view(self, request, extra_context=None):
-        # Filtros personalizados
-        qs = self.get_queryset(request)
-        
-        # Filtro por categoría de servicio
-        categoria_servicio = request.GET.get('categoria_servicio')
-        if categoria_servicio:
-            qs = qs.filter(servicios__categoria__id=categoria_servicio)
+    def changelist_view(self, request, extra_context=None):
+            # Filtros personalizados
+            qs = self.get_queryset(request)
+            
+            # Filtro por categoría de servicio
+            categoria_servicio = request.GET.get('categoria_servicio')
+            if categoria_servicio:
+                qs = qs.filter(servicios__categoria__id=categoria_servicio)
 
-        # Filtro por nombre de servicio
-        servicio = request.GET.get('servicio')
-        if servicio:
-            qs = qs.filter(servicios__id=servicio)
+            # Filtro por nombre de servicio
+            servicio = request.GET.get('servicio')
+            if servicio:
+                qs = qs.filter(servicios__id=servicio)
 
-        # Filtro por fecha de inicio y fin
-        fecha_inicio = request.GET.get('fecha_inicio')
-        fecha_fin = request.GET.get('fecha_fin')
+            # Filtro por fecha de inicio y fin
+            fecha_inicio = request.GET.get('fecha_inicio')
+            fecha_fin = request.GET.get('fecha_fin')
 
-        if fecha_inicio:
-            fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-            qs = qs.filter(fecha_reserva__date__gte=fecha_inicio)
-        else:
-            fecha_inicio = date.today()  # Fecha por defecto
-            qs = qs.filter(fecha_reserva__date=fecha_inicio)  # Filtra solo por la fecha de hoy
+            if fecha_inicio:
+                fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+                qs = qs.filter(fecha_reserva__date__gte=fecha_inicio)
+            else:
+                fecha_inicio = date.today()  # Fecha por defecto
+                qs = qs.filter(fecha_reserva__date=fecha_inicio)  # Filtra solo por la fecha de hoy
 
-        if fecha_fin:
-            fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
-            qs = qs.filter(fecha_reserva__date__lte=fecha_fin)
+            if fecha_fin:
+                fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+                qs = qs.filter(fecha_reserva__date__lte=fecha_fin)
 
-        # Calcular el monto total en el rango de fechas
-        total_en_rango = qs.aggregate(total=Sum('total'))['total'] or 0
+            # Calcular el monto total en el rango de fechas
+            total_en_rango = qs.aggregate(total=Sum('total'))['total'] or 0
 
-        # 1. Obtén el ChangeList original:
-        cl = self.get_changelist_instance(request)
+            # 1. Obtén el ChangeList original:
+            cl = self.get_changelist_instance(request)
 
-        # 2. Actualiza el queryset del ChangeList:
-        cl.queryset = qs
+            # 2. Actualiza el queryset del ChangeList:
+            cl.queryset = qs
 
-        # Crea el contexto extra
-        extra_context = extra_context or {}
+            # Crea el contexto extra
+            extra_context = extra_context or {}
 
-        # Pasa el ChangeList actualizado al contexto
-        extra_context['cl'] = cl
+            # Pasa el ChangeList actualizado al contexto
+            extra_context['cl'] = cl
 
-        # Resto del contexto
-        fecha_actual = date.today().strftime('%Y-%m-%d')
-        extra_context['fecha_inicio'] = fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else fecha_actual
-        extra_context['fecha_fin'] = fecha_fin.strftime('%Y-%m-%d') if fecha_fin else fecha_actual
-        extra_context['total_en_rango'] = total_en_rango
-        extra_context['categorias_servicio'] = CategoriaServicio.objects.all()
-        extra_context['servicios'] = Servicio.objects.all()
+            # Resto del contexto
+            fecha_actual = date.today().strftime('%Y-%m-%d')
+            extra_context['fecha_inicio'] = fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else fecha_actual
+            extra_context['fecha_fin'] = fecha_fin.strftime('%Y-%m-%d') if fecha_fin else fecha_actual
+            extra_context['total_en_rango'] = total_en_rango
+            extra_context['categorias_servicio'] = CategoriaServicio.objects.all()
+            extra_context['servicios'] = Servicio.objects.all()
 
-        return super().changelist_view(request, extra_context=extra_context)
+            return super().changelist_view(request, extra_context=extra_context)
  
     # Guardar cambios con registro de movimiento
     def save_model(self, request, obj, form, change):
