@@ -138,6 +138,33 @@ class VentaReservaAdmin(admin.ModelAdmin):
         ).select_related('cliente')
         return queryset
 
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)  # Guarda los inlines primero
+
+        venta_reserva = form.instance
+        with transaction.atomic():
+            for formset in formsets:
+                if formset.model == ReservaProducto:
+                    for inline_form in formset:
+                        if inline_form.has_changed():
+                            if inline_form.cleaned_data: #Para verificar si no se está eliminando el inline
+                                cantidad = inline_form.cleaned_data.get('cantidad')
+                                if inline_form.instance.pk:  # Si existe, significa que se está modificando
+                                    cantidad_anterior = ReservaProducto.objects.get(pk=inline_form.instance.pk).cantidad
+                                    diferencia = cantidad - cantidad_anterior
+                                    producto = inline_form.cleaned_data['producto']
+
+                                    if diferencia > 0:
+                                        producto.reducir_inventario(diferencia)
+                                    elif diferencia < 0:
+                                        producto.cantidad_disponible -= diferencia # Restamos para sumar al inventario
+                                        producto.save()
+                                #aqui se reduce el inventario si recien se crea el producto dentro de la venta reserva
+                                elif not inline_form.instance.pk:
+                                    inline_form.instance.producto.reducir_inventario(cantidad)
+
+            venta_reserva.calcular_total()  # Recalcula el total después de actualizar el inventario
+
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
 
