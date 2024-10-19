@@ -183,22 +183,22 @@ def actualizar_total_venta_reserva(sender, instance, created, **kwargs):
 @receiver(post_save, sender=ReservaProducto)
 def actualizar_inventario(sender, instance, created, raw, using, update_fields, **kwargs):
     if created:
-        instance.producto.reducir_inventario(instance.cantidad)
-    elif not raw:  # Asegúrate de que no sea una creación raw ni una importación
+        with transaction.atomic():
+                instance.producto.reducir_inventario(instance.cantidad)
+
+    elif not raw:  # Asegúrate de que no sea una creación raw
         try:
             reserva_producto_anterior = ReservaProducto.objects.using(using).get(pk=instance.pk)
             cantidad_anterior = reserva_producto_anterior.cantidad
-
             diferencia = instance.cantidad - cantidad_anterior
-            
-            if diferencia > 0:
-                instance.producto.reducir_inventario(diferencia)
-
-            elif diferencia < 0:
-                instance.producto.cantidad_disponible -= diferencia #Resta la diferencia, si la cantidad disminuye la diferencia es negativa, se convierte en positivo y se suma al inventario
-                instance.producto.save()
+            with transaction.atomic():
+                if diferencia > 0:
+                    instance.producto.reducir_inventario(diferencia)
+                elif diferencia < 0:
+                    instance.producto.cantidad_disponible -= diferencia
+                    instance.producto.save()
         except ReservaProducto.DoesNotExist:
-            pass #Para la primera vez que se crea el modelo
+            pass
 
 @receiver(m2m_changed, sender=VentaReserva.productos.through)
 def actualizar_inventario_m2m(sender, instance, action, **kwargs):
