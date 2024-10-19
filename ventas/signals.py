@@ -165,14 +165,16 @@ def actualizar_total_al_eliminar_servicio(sender, instance, **kwargs):
     instance.venta_reserva.calcular_total()
 
 @receiver(post_save, sender=ReservaServicio)
-def actualizar_total_al_guardar_servicio(sender, instance, created, **kwargs):
+def actualizar_total_al_guardar_servicio(sender, instance, created, raw, using, update_fields, **kwargs):  # Agrega raw y using
     if created:
         instance.venta_reserva.calcular_total()
-    else:
-        # Obtén la cantidad anterior usando el tracker
-        cantidad_anterior = instance.tracker.previous('cantidad_personas')
-        if cantidad_anterior is not None and cantidad_anterior != instance.cantidad_personas:  # Verifica si cambió
-            instance.venta_reserva.calcular_total()
+    elif not raw:  # Verifica que no sea una creación raw
+        try:
+            anterior_reserva_servicio = ReservaServicio.objects.using(using).get(pk=instance.pk)
+            if anterior_reserva_servicio.cantidad_personas != instance.cantidad_personas or anterior_reserva_servicio.servicio != instance.servicio:
+                instance.venta_reserva.calcular_total()
+        except ReservaServicio.DoesNotExist:
+            pass  # La instancia no existía antes, probablemente creada a través del inline
 
 @receiver(post_save, sender=ReservaProducto)
 @receiver(post_save, sender=ReservaServicio)
