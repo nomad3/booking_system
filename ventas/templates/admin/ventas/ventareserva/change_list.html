@@ -2,7 +2,6 @@
 
 {% block date_hierarchy %}{% endblock %}
 
-
 {% block content %}
     <div style="margin-bottom: 20px;">
         <form method="get">
@@ -32,5 +31,6 @@
         </form>
         <p><strong>Total en el rango de fechas:</strong> {{ total_en_rango }} CLP</p>
     </div>
-    {{ block.super }}
+
+    {{ block.super }}  <!---  Asegúrate de que esté presente -->
 {% endblock %}
