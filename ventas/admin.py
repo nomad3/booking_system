@@ -73,7 +73,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
     list_per_page = 20  # Paginación
 
-def changelist_view(self, request, extra_context=None):
+    def changelist_view(self, request, extra_context=None):
         # Filtros personalizados
         qs = self.get_queryset(request)
         
@@ -96,7 +96,7 @@ def changelist_view(self, request, extra_context=None):
             qs = qs.filter(fecha_reserva__date__gte=fecha_inicio)
         else:
             fecha_inicio = date.today()  # Fecha por defecto
-            qs = qs.filter(fecha_reserva__date=fecha_inicio)  # Filtra solo por la fecha de hoy
+            qs = qs.filter(fecha_reserva__date=fecha_inicio)  #Filtra solo por la fecha de hoy
 
         if fecha_fin:
             fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
@@ -105,26 +105,19 @@ def changelist_view(self, request, extra_context=None):
         # Calcular el monto total en el rango de fechas
         total_en_rango = qs.aggregate(total=Sum('total'))['total'] or 0
 
-        # 1. Obtén el ChangeList original:
-        cl = self.get_changelist_instance(request)
-
-        # 2. Actualiza el queryset del ChangeList:
-        cl.queryset = qs
-
-        # Crea el contexto extra
         extra_context = extra_context or {}
-
-        # Pasa el ChangeList actualizado al contexto
-        extra_context['cl'] = cl
-
-        # Resto del contexto
-        fecha_actual = date.today().strftime('%Y-%m-%d')
-        extra_context['fecha_inicio'] = fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else fecha_actual
-        extra_context['fecha_fin'] = fecha_fin.strftime('%Y-%m-%d') if fecha_fin else fecha_actual
         extra_context['total_en_rango'] = total_en_rango
-        extra_context['categorias_servicio'] = CategoriaServicio.objects.all()
-        extra_context['servicios'] = Servicio.objects.all()
 
+        # Pasar todas las categorías y servicios al contexto, no solo las filtradas
+        extra_context['categorias_servicio'] = CategoriaServicio.objects.all()  # <-- Corrección
+        extra_context['servicios'] = Servicio.objects.all() # <-- Corrección
+
+
+        # Pasar las fechas seleccionadas al contexto (o la fecha de hoy si no se seleccionaron)
+        extra_context['fecha_inicio'] = fecha_inicio.strftime('%Y-%m-%d')
+        extra_context['fecha_fin'] = fecha_fin.strftime('%Y-%m-%d') if fecha_fin else ''
+
+        # Llamar a changelist_view del padre con el queryset filtrado
         return super().changelist_view(request, extra_context=extra_context)
  
     # Guardar cambios con registro de movimiento
