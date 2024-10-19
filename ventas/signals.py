@@ -166,8 +166,13 @@ def actualizar_total_al_eliminar_servicio(sender, instance, **kwargs):
 
 @receiver(post_save, sender=ReservaServicio)
 def actualizar_total_al_guardar_servicio(sender, instance, created, **kwargs):
-    if created or instance.cantidad_personas_changed():
+    if created:
         instance.venta_reserva.calcular_total()
+    else:
+        # Obtén la cantidad anterior usando el tracker
+        cantidad_anterior = instance.tracker.previous('cantidad_personas')
+        if cantidad_anterior is not None and cantidad_anterior != instance.cantidad_personas:  # Verifica si cambió
+            instance.venta_reserva.calcular_total()
 
 @receiver(post_save, sender=ReservaProducto)
 @receiver(post_save, sender=ReservaServicio)
@@ -176,19 +181,24 @@ def actualizar_total_venta_reserva(sender, instance, created, **kwargs):
     instance.venta_reserva.save() # Guardar los cambios del total
 
 @receiver(post_save, sender=ReservaProducto)
-def actualizar_inventario(sender, instance, created, **kwargs):
+def actualizar_inventario(sender, instance, created, raw, using, update_fields, **kwargs):
     if created:
         instance.producto.reducir_inventario(instance.cantidad)
-    else:
-        # Obtén la cantidad anterior del tracker
-        cantidad_anterior = instance.tracker.previous('cantidad')
-        if cantidad_anterior is not None: #En la primera vez que se crea un modelo no hay previous
+    elif not raw:  # Asegúrate de que no sea una creación raw ni una importación
+        try:
+            reserva_producto_anterior = ReservaProducto.objects.using(using).get(pk=instance.pk)
+            cantidad_anterior = reserva_producto_anterior.cantidad
+
             diferencia = instance.cantidad - cantidad_anterior
+            
             if diferencia > 0:
                 instance.producto.reducir_inventario(diferencia)
+
             elif diferencia < 0:
-                instance.producto.cantidad_disponible -= diferencia  # Aumenta el inventario si la cantidad se reduce
+                instance.producto.cantidad_disponible -= diferencia #Resta la diferencia, si la cantidad disminuye la diferencia es negativa, se convierte en positivo y se suma al inventario
                 instance.producto.save()
+        except ReservaProducto.DoesNotExist:
+            pass #Para la primera vez que se crea el modelo
 
 @receiver(m2m_changed, sender=VentaReserva.productos.through)
 def actualizar_inventario_m2m(sender, instance, action, **kwargs):
