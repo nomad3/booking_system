@@ -140,27 +140,24 @@ class VentaReservaAdmin(admin.ModelAdmin):
         return queryset
 
     def save_related(self, request, form, formsets, change):
-            super().save_related(request, form, formsets, change)
+        super().save_related(request, form, formsets, change)
 
-            venta_reserva = form.instance
-            with transaction.atomic():
-                for formset in formsets:
-                    if formset.model == ReservaProducto:
-                        for inline_form in formset:
-                            if inline_form.has_changed():
-                                if inline_form.cleaned_data:
-                                    cantidad = inline_form.cleaned_data.get('cantidad')
-                                    producto_id = inline_form.cleaned_data.get('producto')
+        venta_reserva = form.instance
 
-                                    if producto_id:
-                                        try:
-                                            producto = Producto.objects.get(pk=producto_id)
-                                        except Producto.DoesNotExist:
-                                            continue
+        with transaction.atomic():
+            for formset in formsets:
+                if formset.model == ReservaProducto:
+                    for inline_form in formset:
+                        if inline_form.has_changed():
+                            if inline_form.cleaned_data:  # Si se está creando o modificando
+                                cantidad = inline_form.cleaned_data.get('cantidad')
+                                producto_id = inline_form.cleaned_data.get('producto')
+                                if producto_id:
+                                    producto = Producto.objects.get(pk=producto_id)
 
                                     try:
                                         cantidad_anterior = ReservaProducto.objects.get(
-                                            producto_id=producto_id,  # <-- Usa producto_id aquí
+                                            producto=producto_id,
                                             pk=inline_form.instance.pk
                                         ).cantidad
                                     except ReservaProducto.DoesNotExist:
@@ -173,10 +170,21 @@ class VentaReservaAdmin(admin.ModelAdmin):
                                     elif diferencia < 0:
                                         producto.cantidad_disponible -= diferencia
                                         producto.save()
-                                    elif inline_form.instance.pk is None:
+                                    elif not inline_form.instance.pk:  # Nueva instancia
                                         producto.reducir_inventario(cantidad)
 
-                venta_reserva.calcular_total()
+                            elif inline_form.instance.pk:  # Si se está eliminando
+                                try:
+                                    reservaproducto_instance = ReservaProducto.objects.get(pk=inline_form.instance.pk)
+                                    reservaproducto_instance.producto.cantidad_disponible += reservaproducto_instance.cantidad
+                                    reservaproducto_instance.producto.save()
+
+                                except ReservaProducto.DoesNotExist:
+                                    pass
+
+
+            venta_reserva.calcular_total()
+
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
 
