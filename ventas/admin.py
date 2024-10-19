@@ -159,10 +159,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
                                             continue  # Ignora y continúa si el producto no existe
 
                                     try:
-                                        cantidad_anterior = ReservaProducto.objects.get(
-                                            producto=producto,  # <-- Usa la instancia del producto o producto.pk
-                                            pk=inline_form.instance.pk
-                                        ).cantidad
+                                        cantidad_anterior = ReservaProducto.objects.get(pk=inline_form.instance.pk).cantidad
                                     except ReservaProducto.DoesNotExist:
                                         cantidad_anterior = 0
 
