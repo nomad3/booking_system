@@ -177,16 +177,17 @@ def actualizar_total_venta_reserva(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=ReservaProducto)
 def actualizar_inventario(sender, instance, created, **kwargs):
-    if created:  # Solo descuenta si es una nueva ReservaProducto
+    if created:
         instance.producto.reducir_inventario(instance.cantidad)
-    elif instance.cantidad_changed():  # Si cambia la cantidad de un producto ya reservado
-        cantidad_anterior = instance.tracker.previous('cantidad')  # Obtén la cantidad anterior
-        if cantidad_anterior is not None:  # Manejo para la creación (no hay cantidad anterior)
+    else:
+        # Obtén la cantidad anterior del tracker
+        cantidad_anterior = instance.tracker.previous('cantidad')
+        if cantidad_anterior is not None: #En la primera vez que se crea un modelo no hay previous
             diferencia = instance.cantidad - cantidad_anterior
             if diferencia > 0:
                 instance.producto.reducir_inventario(diferencia)
             elif diferencia < 0:
-                instance.producto.cantidad_disponible -= diferencia # Suma al inventario si la cantidad se reduce
+                instance.producto.cantidad_disponible -= diferencia  # Aumenta el inventario si la cantidad se reduce
                 instance.producto.save()
 
 @receiver(m2m_changed, sender=VentaReserva.productos.through)
