@@ -140,7 +140,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
         return queryset
 
     def save_related(self, request, form, formsets, change):
-            super().save_related(request, form, formsets, change)
+            super().save_related(request, form, formsets, change)  # Guarda los inlines primero
 
             venta_reserva = form.instance
             with transaction.atomic():
@@ -152,15 +152,15 @@ class VentaReservaAdmin(admin.ModelAdmin):
                                     cantidad = inline_form.cleaned_data.get('cantidad')
                                     producto_id = inline_form.cleaned_data.get('producto')
 
-                                    if producto_id:
+                                    if producto_id:  # Verifica si producto_id no es None
                                         try:
                                             producto = Producto.objects.get(pk=producto_id)
                                         except Producto.DoesNotExist:
-                                            continue
+                                            continue  # Ignora y continúa si el producto no existe
 
                                     try:
                                         cantidad_anterior = ReservaProducto.objects.get(
-                                            producto_id=producto_id,  # <-- Usa producto_id aquí
+                                            producto_id=producto.pk,  # <-- Usa producto.pk (o producto.id)
                                             pk=inline_form.instance.pk
                                         ).cantidad
                                     except ReservaProducto.DoesNotExist:
@@ -173,10 +173,10 @@ class VentaReservaAdmin(admin.ModelAdmin):
                                     elif diferencia < 0:
                                         producto.cantidad_disponible -= diferencia
                                         producto.save()
-                                    elif inline_form.instance.pk is None:
+                                    elif inline_form.instance.pk is None:  # Nueva instancia
                                         producto.reducir_inventario(cantidad)
 
-                venta_reserva.calcular_total()
+                venta_reserva.calcular_total()  # Recalcula el total
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
 
