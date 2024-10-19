@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save, post_delete, m2m_changed
 from django.dispatch import receiver
 from django.utils import timezone
 from .models import VentaReserva, Cliente, ReservaProducto, ReservaServicio, Pago, MovimientoCliente
@@ -174,3 +174,35 @@ def actualizar_total_al_guardar_servicio(sender, instance, created, **kwargs):
 def actualizar_total_venta_reserva(sender, instance, created, **kwargs):
     instance.venta_reserva.actualizar_total()
     instance.venta_reserva.save() # Guardar los cambios del total
+
+@receiver(post_save, sender=ReservaProducto)
+def actualizar_inventario(sender, instance, created, **kwargs):
+    if created:  # Solo descuenta si es una nueva ReservaProducto
+        instance.producto.reducir_inventario(instance.cantidad)
+    elif instance.cantidad_changed():  # Si cambia la cantidad de un producto ya reservado
+        cantidad_anterior = instance.tracker.previous('cantidad')  # Obtén la cantidad anterior
+        if cantidad_anterior is not None:  # Manejo para la creación (no hay cantidad anterior)
+            diferencia = instance.cantidad - cantidad_anterior
+            if diferencia > 0:
+                instance.producto.reducir_inventario(diferencia)
+            elif diferencia < 0:
+                instance.producto.cantidad_disponible -= diferencia # Suma al inventario si la cantidad se reduce
+                instance.producto.save()
+
+@receiver(m2m_changed, sender=VentaReserva.productos.through)
+def actualizar_inventario_m2m(sender, instance, action, **kwargs):
+    if action == 'post_add':
+        for pk in kwargs['pk_set']:
+            producto = Producto.objects.get(pk=pk)
+            cantidad = ReservaProducto.objects.get(venta_reserva=instance, producto=producto).cantidad
+            producto.reducir_inventario(cantidad)
+    elif action == 'post_remove':  # Restaurar inventario al eliminar productos
+        for pk in kwargs['pk_set']:
+            producto = Producto.objects.get(pk=pk)
+            cantidad = ReservaProducto.objects.filter(venta_reserva=instance, producto=producto).first().cantidad
+            producto.cantidad_disponible += cantidad
+            producto.save()
+    elif action == 'post_clear':  # Restaurar inventario al borrar todos los productos
+        for reserva_producto in ReservaProducto.objects.filter(venta_reserva=instance):
+            reserva_producto.producto.cantidad_disponible += reserva_producto.cantidad
+            reserva_producto.producto.save()
