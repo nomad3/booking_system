@@ -159,6 +159,9 @@ class VentaReservaAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
 
+        # Store the request for use in get_queryset
+        self.request = request
+
         # Get filter parameters
         categoria_servicio_id = request.GET.get('categoria_servicio')
         servicio_id = request.GET.get('servicio')
@@ -167,9 +170,9 @@ class VentaReservaAdmin(admin.ModelAdmin):
 
         # Apply filters based on parameters
         if categoria_servicio_id:
-            qs = qs.filter(reservaservicios__servicio__categoria_id=categoria_servicio_id)
+            qs = qs.filter(servicios__categoria_id=categoria_servicio_id)
         if servicio_id:
-            qs = qs.filter(reservaservicios__servicio_id=servicio_id)
+            qs = qs.filter(servicios__id=servicio_id)
         if fecha_inicio:
             qs = qs.filter(fecha_reserva__date__gte=fecha_inicio)
         else:
