@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
-from .views import servicios_vendidos_view, inicio_sistema_view, caja_diaria_view, auditoria_movimientos_view
+from .views import servicios_vendidos_view, inicio_sistema_view, caja_diaria_view, auditoria_movimientos_view, venta_reserva_list, venta_reserva_detail
 
 # Registrar las vistas en el router de DRF
 router = DefaultRouter()
@@ -19,4 +19,6 @@ urlpatterns = [
     path('caja-diaria/', caja_diaria_view, name='caja_diaria'),  # Nueva vista de caja diaria
     path('auditoria-movimientos/', auditoria_movimientos_view, name='auditoria_movimientos'),  # Nueva vista de auditoría
     path('', include(router.urls)),  # Mantener las rutas del router
+    path('venta_reservas/', views.venta_reserva_list, name='venta_reserva_list'),
+    path('venta_reservas/<int:pk>/', views.venta_reserva_detail, name='venta_reserva_detail'),
 ]

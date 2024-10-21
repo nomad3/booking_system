@@ -131,6 +131,24 @@ class VentaReserva(models.Model):
             producto.reducir_inventario(cantidad)
             self.calcular_total()  # <-- Llama a calcular_total aquí
 
+    @property
+    def total_servicios(self):
+        total = self.reservaservicios.aggregate(
+            total=models.Sum(
+                models.F('servicio__precio_base') * models.F('cantidad_personas')
+            )
+        )['total'] or 0
+        return total
+
+    @property
+    def total_productos(self):
+        total = self.reservaproductos.aggregate(
+            total=models.Sum(
+                models.F('producto__precio_base') * models.F('cantidad')
+            )
+        )['total'] or 0
+        return total
+
     def agregar_servicio(self, servicio, fecha_agendamiento, cantidad_personas=1):
         with transaction.atomic():
             duracion_servicio = servicio.duracion

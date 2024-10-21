@@ -1,11 +1,11 @@
 
 from rest_framework import viewsets
 from rest_framework.response import Response
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.contrib.auth.decorators import user_passes_test
 import csv
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from datetime import datetime, timedelta
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
@@ -30,6 +30,95 @@ from .serializers import (
     CategoriaServicioSerializer,
     VentaReservaSerializer
 )
+
+def venta_reserva_list(request):
+    # Get filter parameters from GET request
+    categoria_servicio_id = request.GET.get('categoria_servicio')
+    servicio_id = request.GET.get('servicio')
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+
+    # Start with all VentaReserva objects
+    qs = VentaReserva.objects.all()
+
+    # Apply filters
+    if categoria_servicio_id:
+        qs = qs.filter(
+            reservaservicios__servicio__categoria_id=categoria_servicio_id
+        )
+    if servicio_id:
+        qs = qs.filter(
+            reservaservicios__servicio_id=servicio_id
+        )
+
+    # Handle date range
+    if fecha_inicio:
+        try:
+            fecha_inicio_parsed = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+        except ValueError:
+            fecha_inicio_parsed = timezone.now().date()
+    else:
+        # Default to today if no start date provided
+        fecha_inicio_parsed = timezone.now().date()
+
+    qs = qs.filter(fecha_reserva__date__gte=fecha_inicio_parsed)
+
+    if fecha_fin:
+        try:
+            fecha_fin_parsed = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+            qs = qs.filter(fecha_reserva__date__lte=fecha_fin_parsed)
+        except ValueError:
+            pass  # Ignore invalid fecha_fin
+    else:
+        # If no fecha_fin provided, do not apply upper date filter
+
+        # Optionally, set fecha_fin_parsed to a default value if needed
+
+        pass
+
+    # Remove duplicates caused by joins
+    qs = qs.distinct()
+
+    # Calculate total within the date range
+    total_en_rango = qs.aggregate(total=Sum('total'))['total'] or 0
+
+    # Prefetch related data for efficiency
+    qs = qs.prefetch_related(
+        'reservaproductos__producto',
+        'reservaservicios__servicio',
+        'cliente',
+    )
+
+    # Get categories and services for filter options
+    categorias_servicio = CategoriaServicio.objects.all()
+    servicios = Servicio.objects.all()
+
+    context = {
+        'venta_reservas': qs,
+        'categorias_servicio': categorias_servicio,
+        'servicios': servicios,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'categoria_servicio_id': categoria_servicio_id,
+        'servicio_id': servicio_id,
+        'today': timezone.now().date(),
+        'total_en_rango': total_en_rango,
+    }
+
+    return render(request, 'ventas/venta_reserva_list.html', context)
+
+def venta_reserva_detail(request, pk):
+    venta = get_object_or_404(
+        VentaReserva.objects.prefetch_related(
+            'reservaservicios__servicio',
+            'reservaproductos__producto',
+            'pagos',
+            'cliente',
+        ),
+        pk=pk,
+    )
+    context = {'venta': venta}
+    return render(request, 'ventas/venta_reserva_detail.html', context)
 
 def servicios_vendidos_view(request):
     # Obtener la fecha actual con la zona horaria correcta

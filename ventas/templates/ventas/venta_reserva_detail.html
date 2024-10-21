@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Detalle de Venta/Reserva #{{ venta.id }}</h1>
+<!-- Display detailed information about the VentaReserva -->
+<a href="{% url 'venta_reserva_list' %}">Volver a la lista</a>
+{% endblock %}
