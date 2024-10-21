@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save, post_delete, m2m_changed
+from django.db.models.signals import post_save, post_delete, m2m_changed, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.db import transaction
@@ -184,24 +184,20 @@ def actualizar_total_venta_reserva(sender, instance, created, **kwargs):
     instance.venta_reserva.save() # Guardar los cambios del total
 
 @receiver(post_save, sender=ReservaProducto)
-def actualizar_inventario(sender, instance, created, raw, using, update_fields, **kwargs):
+def actualizar_inventario(sender, instance, created, **kwargs):
     if created:
         with transaction.atomic():
-                instance.producto.reducir_inventario(instance.cantidad)
-
-    elif not raw:  # Asegúrate de que no sea una creación raw
-        try:
-            reserva_producto_anterior = ReservaProducto.objects.using(using).get(pk=instance.pk)
-            cantidad_anterior = reserva_producto_anterior.cantidad
-            diferencia = instance.cantidad - cantidad_anterior
-            with transaction.atomic():
-                if diferencia > 0:
-                    instance.producto.reducir_inventario(diferencia)
-                elif diferencia < 0:
-                    instance.producto.cantidad_disponible -= diferencia
-                    instance.producto.save()
-        except ReservaProducto.DoesNotExist:
-            pass
+            instance.producto.reducir_inventario(instance.cantidad)
+    else:
+        cantidad_anterior = getattr(instance, '_cantidad_anterior', 0)
+        diferencia = instance.cantidad - cantidad_anterior
+        with transaction.atomic():
+            if diferencia > 0:
+                instance.producto.reducir_inventario(diferencia)
+            elif diferencia < 0:
+                # Since diferencia is negative, subtracting it will add back to the inventory
+                instance.producto.cantidad_disponible -= diferencia
+                instance.producto.save()
 
 @receiver(m2m_changed, sender=VentaReserva.productos.through)
 def actualizar_inventario_m2m(sender, instance, action, **kwargs):
@@ -220,3 +216,13 @@ def actualizar_inventario_m2m(sender, instance, action, **kwargs):
         for reserva_producto in ReservaProducto.objects.filter(venta_reserva=instance):
             reserva_producto.producto.cantidad_disponible += reserva_producto.cantidad
             reserva_producto.producto.save()
+
+@receiver(pre_save, sender=ReservaProducto)
+def guardar_cantidad_anterior(sender, instance, **kwargs):
+    if instance.pk:
+        try:
+            instance._cantidad_anterior = ReservaProducto.objects.get(pk=instance.pk).cantidad
+        except ReservaProducto.DoesNotExist:
+            instance._cantidad_anterior = 0
+    else:
+        instance._cantidad_anterior = 0
