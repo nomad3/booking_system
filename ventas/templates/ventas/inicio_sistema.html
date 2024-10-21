@@ -16,13 +16,15 @@
     <div class="row justify-content-center">
       <!-- Gestión de Ventas y Reservas -->
       <div class="col-lg-6 col-md-6 col-sm-12 my-3">
-        <h2 class="text-center">Gestión de Ventas y Reservas</h2>
+        <h2 class="text-center">Ventas y Reservas</h2>
         <div class="d-grid gap-2">
           <a href="{% url 'admin:ventas_ventareserva_add' %}" class="btn btn-primary w-100 my-2">Agregar Venta/Reserva</a>
-          <a href="{% url 'admin:ventas_ventareserva_changelist' %}" class="btn btn-secondary w-100 my-2">Ver y Modificar Ventas/Reservas</a>
+          <a href="{% url 'ventas:venta_reserva_list' %}" class="btn btn-primary btn-block my-2">Ver Ventas/Reservas</a>
+          <a href="{% url 'admin:ventas_ventareserva_changelist' %}" class="btn btn-secondary w-100 my-2">Modificar Ventas/Reservas</a>
+          <a href="{% url 'servicios_vendidos' %}" class="btn btn-secondary w-100 my-2">Servicios Vendidos</a>
           <a href="{% url 'caja_diaria' %}" class="btn btn-secondary w-100 my-2">Cuadre de Caja Diario</a>
           <a href="{% url 'auditoria_movimientos' %}" class="btn btn-secondary w-100 my-2">Auditoría de Movimientos</a>
-          <a href="{% url 'servicios_vendidos' %}" class="btn btn-secondary w-100 my-2">Servicios Vendidos</a>
+
         </div>
       </div>
 
@@ -53,7 +55,7 @@
         <h2 class="text-center">Gestión de Servicios</h2>
         <div class="d-grid gap-2">
           <a href="{% url 'admin:ventas_servicio_add' %}" class="btn btn-primary w-100 my-2">Agregar Servicio</a>
-          <a href="{% url 'admin:ventas_servicio_changelist' %}" class="btn btn-secondary w-100 my-2">Ver Servicios</a>
+          <a href="{% url 'admin:ventas_servicio_changelist' %}" class="btn btn-secondary w-100 my-2">Ver y Modificar Servicios</a>
           <a href="{% url 'admin:ventas_categoriaservicio_changelist' %}" class="btn btn-secondary w-100 my-2">Categorías de Servicios</a>
         </div>
       </div>
