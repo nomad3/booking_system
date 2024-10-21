@@ -117,7 +117,10 @@ def venta_reserva_detail(request, pk):
         ),
         pk=pk,
     )
-    context = {'venta': venta}
+    
+    context = {
+        'venta': venta,
+    }
     return render(request, 'ventas/venta_reserva_detail.html', context)
 
 def servicios_vendidos_view(request):
