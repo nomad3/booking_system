@@ -22,10 +22,10 @@
     </select>
 
     <label for="fecha_inicio">Fecha Inicio:</label>
-    <input type="date" name="fecha_inicio" id="fecha_inicio" value="{{ fecha_inicio|default:today|date:'Y-m-d' }}">
+    <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio }}">
 
     <label for="fecha_fin">Fecha Fin:</label>
-    <input type="date" name="fecha_fin" id="fecha_fin" value="{{ fecha_fin }}">
+    <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin }}">
 
     <button type="submit">Filtrar</button>
 </form>
