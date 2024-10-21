@@ -226,3 +226,9 @@ def guardar_cantidad_anterior(sender, instance, **kwargs):
             instance._cantidad_anterior = 0
     else:
         instance._cantidad_anterior = 0
+
+@receiver(post_delete, sender=ReservaProducto)
+def restaurar_inventario_al_eliminar_producto(sender, instance, **kwargs):
+    with transaction.atomic():
+        instance.producto.cantidad_disponible += instance.cantidad
+        instance.producto.save()
