@@ -74,8 +74,34 @@ class VentaReservaAdmin(admin.ModelAdmin):
     list_per_page = 20  # Paginación
 
     def changelist_view(self, request, extra_context=None):
-            return super().changelist_view(request, extra_context=extra_context)
-    
+        extra_context = extra_context or {}
+
+        # Get filter parameters for the form
+        categoria_servicio_id = request.GET.get('categoria_servicio')
+        servicio_id = request.GET.get('servicio')
+        fecha_inicio = request.GET.get('fecha_inicio')
+        fecha_fin = request.GET.get('fecha_fin')
+
+        # Fetch all categories and services for the dropdowns
+        categorias_servicio = CategoriaServicio.objects.all()
+        servicios = Servicio.objects.all()
+
+        # Add to extra_context
+        extra_context['categorias_servicio'] = categorias_servicio
+        extra_context['servicios'] = servicios
+        extra_context['fecha_inicio'] = fecha_inicio
+        extra_context['fecha_fin'] = fecha_fin
+        extra_context['today'] = timezone.now().date()
+
+        # Get the filtered queryset
+        queryset = self.get_queryset(request)
+
+        # Calculate total in the date range
+        total_en_rango = queryset.aggregate(total=Sum('total'))['total'] or 0
+        extra_context['total_en_rango'] = total_en_rango
+
+        return super().changelist_view(request, extra_context=extra_context)
+
     # Guardar cambios con registro de movimiento
     def save_model(self, request, obj, form, change):
         if change:
@@ -131,12 +157,40 @@ class VentaReservaAdmin(admin.ModelAdmin):
 
     # Optimización de consultas con prefetch_related
     def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        queryset = queryset.prefetch_related(
+        qs = super().get_queryset(request)
+
+        # Store the request for use in get_queryset
+        self.request = request
+
+        # Get filter parameters
+        categoria_servicio_id = request.GET.get('categoria_servicio')
+        servicio_id = request.GET.get('servicio')
+        fecha_inicio = request.GET.get('fecha_inicio')
+        fecha_fin = request.GET.get('fecha_fin')
+
+        # Apply filters based on parameters
+        if categoria_servicio_id:
+            qs = qs.filter(servicios__categoria_id=categoria_servicio_id)
+        if servicio_id:
+            qs = qs.filter(servicios__id=servicio_id)
+        if fecha_inicio:
+            qs = qs.filter(fecha_reserva__date__gte=fecha_inicio)
+        else:
+            # Default to today if no fecha_inicio
+            today = timezone.now().date()
+            qs = qs.filter(fecha_reserva__date=today)
+        if fecha_fin:
+            qs = qs.filter(fecha_reserva__date__lte=fecha_fin)
+
+        qs = qs.distinct()
+
+        # Prefetch related data for optimization
+        qs = qs.prefetch_related(
             'reservaproductos__producto',
             'reservaservicios__servicio',
         ).select_related('cliente')
-        return queryset
+
+        return qs
 
 class ProveedorAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'contacto', 'email')
