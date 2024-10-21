@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from ventas import views
 from ventas.views import servicios_vendidos_view
 from ventas.views import inicio_sistema_view
 from ventas.views import caja_diaria_view
