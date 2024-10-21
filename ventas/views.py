@@ -55,13 +55,11 @@ def venta_reserva_list(request):
     qs = VentaReserva.objects.all()
 
     # Apply date range filter (inclusive of the end date)
-    qs = qs.filter(
-        fecha_reserva__range=(fecha_inicio_parsed, fecha_fin_parsed)
-    )
+    qs = qs.filter(fecha_reserva__range=(fecha_inicio_parsed, fecha_fin_parsed))
 
     # Apply filters based on category and service
     if categoria_servicio_id:
-        qs = qs.filter(reservaservicios__servicio__categoria_servicio=categoria_servicio_id)
+        qs = qs.filter(reservaservicios__servicio__categoria_id=categoria_servicio_id)
     if servicio_id:
         qs = qs.filter(reservaservicios__servicio_id=servicio_id)
 
