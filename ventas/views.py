@@ -61,7 +61,7 @@ def venta_reserva_list(request):
 
     # Apply filters based on category and service
     if categoria_servicio_id:
-        qs = qs.filter(reservaservicios__servicio__categoria_servicio_id=categoria_servicio_id)
+        qs = qs.filter(reservaservicios__servicio__categoria_servicio=categoria_servicio_id)
     if servicio_id:
         qs = qs.filter(reservaservicios__servicio_id=servicio_id)
 
