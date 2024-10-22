@@ -1,62 +1,97 @@
-{% extends "admin/base_site.html" %}
+{% extends "base.html" %}
+{% include 'base_menu.html' %}
 
 {% block content %}
-    {% include 'base_menu.html' %}
 <h1>Caja Diaria</h1>
 
-<form method="get">
-    <label for="fecha_inicio">Fecha Inicio:</label>
-    <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio }}">
-
-    <label for="fecha_fin">Fecha Fin:</label>
-    <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin }}">
-
-    <button type="submit">Filtrar</button>
+<!-- Formulario de Filtro por Rango de Fechas -->
+<form method="get" class="form-inline mb-4">
+    <div class="form-group mr-2">
+        <label for="fecha_inicio" class="mr-2">Fecha Inicio:</label>
+        <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio }}" class="form-control">
+    </div>
+    <div class="form-group mr-2">
+        <label for="fecha_fin" class="mr-2">Fecha Fin:</label>
+        <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin }}" class="form-control">
+    </div>
+    <button type="submit" class="btn btn-primary">Filtrar</button>
 </form>
 
+<!-- Ventas -->
 <h2>Ventas</h2>
-<table>
-    <tr>
-        <th>ID</th>
-        <th>Cliente</th>
-        <th>Fecha</th>
-        <th>Total</th>
-    </tr>
-    {% for venta in ventas %}
-    <tr>
-        <td>{{ venta.id }}</td>
-        <td>{{ venta.cliente }}</td>
-        <td>{{ venta.fecha_reserva|date:"Y-m-d" }}</td>
-        <td>{{ venta.total }}</td>
-    </tr>
-    {% empty %}
-    <tr>
-        <td colspan="4">No hay ventas en este rango de fechas.</td>
-    </tr>
-    {% endfor %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Fecha Reserva Servicio</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for venta in ventas %}
+        <tr>
+            <td>{{ venta.id }}</td>
+            <td>{{ venta.cliente }}</td>
+            <td>{{ venta.fecha_reserva|date:"Y-m-d" }}</td>
+            <td>{{ venta.total }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No hay ventas en este rango de fechas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
-<p>Total Ventas: {{ total_ventas }}</p>
+<p><strong>Total Ventas:</strong> {{ total_ventas }}</p>
 
+<!-- Pagos -->
 <h2>Pagos</h2>
-<table>
-    <tr>
-        <th>ID</th>
-        <th>Venta</th>
-        <th>Fecha</th>
-        <th>Monto</th>
-    </tr>
-    {% for pago in pagos %}
-    <tr>
-        <td>{{ pago.id }}</td>
-        <td>{{ pago.venta_reserva }}</td>
-        <td>{{ pago.fecha|date:"Y-m-d" }}</td>
-        <td>{{ pago.monto }}</td>
-    </tr>
-    {% empty %}
-    <tr>
-        <td colspan="4">No hay pagos en este rango de fechas.</td>
-    </tr>
-    {% endfor %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Venta</th>
+            <th>Fecha Pago</th>
+            <th>Monto</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for pago in pagos %}
+        <tr>
+            <td>{{ pago.id }}</td>
+            <td>{{ pago.venta_reserva }}</td>
+            <td>{{ pago.fecha_pago|date:"Y-m-d" }}</td>
+            <td>{{ pago.monto }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">No hay pagos en este rango de fechas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
-<p>Total Pagos: {{ total_pagos }}</p>
-{% endblock %}
+<p><strong>Total Pagos:</strong> {{ total_pagos }}</p>
+
+<!-- Desglose de Pagos por Método de Pago -->
+<h2>Pagos por Método de Pago</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Método de Pago</th>
+            <th>Total Monto</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for pago in pagos_grouped %}
+        <tr>
+            <td>{{ pago.metodo_pago }}</td>
+            <td>{{ pago.total_monto }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="2">No hay pagos en este rango de fechas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
