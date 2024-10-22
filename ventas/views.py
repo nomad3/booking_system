@@ -424,20 +424,42 @@ def auditoria_movimientos_view(request):
     return render(request, 'ventas/auditoria_movimientos.html', context)
 
 def caja_diaria_view(request):
-    # Obtener la fecha actual
-    hoy = timezone.now().date()
+    # Get date range from GET parameters
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
 
-    # Filtrar los pagos realizados hoy y agruparlos por método de pago
-    pagos_por_metodo = Pago.objects.filter(fecha_pago__date=hoy).values('metodo_pago').annotate(total=Sum('monto'))
+    # Set default dates if not provided
+    if not fecha_inicio:
+        fecha_inicio = timezone.localdate().strftime('%Y-%m-%d')
+    if not fecha_fin:
+        fecha_fin = timezone.localdate().strftime('%Y-%m-%d')
 
-    # Calcular el total general del día
-    total_dia = pagos_por_metodo.aggregate(Sum('total'))['total__sum'] or 0
+    # Parse date strings to date objects
+    fecha_inicio_parsed = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+    fecha_fin_parsed = datetime.strptime(fecha_fin, '%Y-%m-%d')
 
-    # Pasar los datos a la plantilla
+    # Adjust fecha_fin to include the entire day
+    fecha_fin_parsed += timedelta(days=1)
+
+    # Filter sales and payments within the date range
+    ventas = VentaReserva.objects.filter(
+        fecha_reserva__range=(fecha_inicio_parsed, fecha_fin_parsed)
+    )
+    pagos = Pago.objects.filter(
+        fecha__range=(fecha_inicio_parsed, fecha_fin_parsed)
+    )
+
+    # Calculate totals
+    total_ventas = ventas.aggregate(total=Sum('total'))['total'] or 0
+    total_pagos = pagos.aggregate(total=Sum('monto'))['total'] or 0
+
     context = {
-        'pagos_por_metodo': pagos_por_metodo,
-        'total_dia': total_dia,
-        'fecha': hoy,
+        'ventas': ventas,
+        'pagos': pagos,
+        'total_ventas': total_ventas,
+        'total_pagos': total_pagos,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
     }
 
     return render(request, 'ventas/caja_diaria.html', context)
