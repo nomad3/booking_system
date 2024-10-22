@@ -446,7 +446,7 @@ def caja_diaria_view(request):
         fecha_reserva__range=(fecha_inicio_parsed, fecha_fin_parsed)
     )
     pagos = Pago.objects.filter(
-        fecha__range=(fecha_inicio_parsed, fecha_fin_parsed)
+        fecha_pago__range=(fecha_inicio_parsed, fecha_fin_parsed)
     )
 
     # Calculate totals
