@@ -178,6 +178,13 @@ class Pago(models.Model):
         ('scotiabank', 'Tranferencia ScotiaBank'),
         ('bancoestado', 'Transferencia BancoEstado'),
         ('cuentarut', 'Transferencia CuentaRut'),
+        ('machjorge', 'mach jorge'),
+        ('machalda', 'mach alda'),
+        ('bicegoalda', 'bicego alda'),
+        ('bcialda', 'bci alda'),
+        ('andesalda', 'andes alda'),
+        ('mercadopagoaremko', 'mercadopago aremko'),
+        ('scotiabankalda', 'scotiabank alda'),
     ]
 
     venta_reserva = models.ForeignKey(VentaReserva, related_name='pagos', on_delete=models.CASCADE)
