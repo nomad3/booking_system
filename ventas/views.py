@@ -424,27 +424,40 @@ def auditoria_movimientos_view(request):
     return render(request, 'ventas/auditoria_movimientos.html', context)
 
 def caja_diaria_view(request):
-    # Obtener el rango de fechas desde los parámetros GET
+    # Obtener rango de fechas desde los parámetros GET
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
 
     # Establecer fechas por defecto (hoy) si no se proporcionan
+    today = timezone.localdate()
     if not fecha_inicio:
-        fecha_inicio = timezone.localdate().strftime('%Y-%m-%d')
+        fecha_inicio = today.strftime('%Y-%m-%d')
     if not fecha_fin:
-        fecha_fin = timezone.localdate().strftime('%Y-%m-%d')
+        fecha_fin = today.strftime('%Y-%m-%d')
 
     # Parsear las cadenas de fecha a objetos date
-    fecha_inicio_parsed = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-    fecha_fin_parsed = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+    try:
+        fecha_inicio_parsed = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+        fecha_fin_parsed = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+    except ValueError:
+        # Manejar errores de formato de fecha
+        fecha_inicio_parsed = today
+        fecha_fin_parsed = today
+
+    # Validar que fecha_inicio no es posterior a fecha_fin
+    if fecha_inicio_parsed > fecha_fin_parsed:
+        fecha_inicio_parsed, fecha_fin_parsed = fecha_fin_parsed, fecha_inicio_parsed
+        fecha_inicio, fecha_fin = fecha_fin, fecha_inicio
 
     # Ajustar fecha_fin para incluir todo el día
     fecha_fin_parsed += timedelta(days=1)
 
-    # Filtrar ventas y pagos dentro del rango de fechas basado en ReservaServicio.fecha
+    # Filtrar VentaReserva basado en ReservaServicio.fecha_agendamiento
     ventas = VentaReserva.objects.filter(
-        reservaservicios__fecha__range=(fecha_inicio_parsed, fecha_fin_parsed)
-    )
+        reservaservicios__fecha_agendamiento__range=(fecha_inicio_parsed, fecha_fin_parsed)
+    ).distinct()
+
+    # Filtrar Pago basado en fecha_pago
     pagos = Pago.objects.filter(
         fecha_pago__range=(fecha_inicio_parsed, fecha_fin_parsed)
     )
@@ -454,7 +467,7 @@ def caja_diaria_view(request):
     total_pagos = pagos.aggregate(total=Sum('monto'))['total'] or 0
 
     # Agrupar pagos por método de pago
-    pagos_grouped = pagos.values('metodo_pago').annotate(total_monto=Sum('monto'))
+    pagos_grouped = pagos.values('metodo_pago').annotate(total_monto=Sum('monto')).order_by('metodo_pago')
 
     context = {
         'ventas': ventas,
@@ -463,7 +476,7 @@ def caja_diaria_view(request):
         'total_pagos': total_pagos,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
-        'pagos_grouped': pagos_grouped,  # Añadido para el agrupamiento
+        'pagos_grouped': pagos_grouped,
     }
 
     return render(request, 'ventas/caja_diaria.html', context)

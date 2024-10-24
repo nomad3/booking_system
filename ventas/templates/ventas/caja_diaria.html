@@ -95,3 +95,34 @@
         {% endfor %}
     </tbody>
 </table>
+
+<!-- (Opcional) Gráfico de Pagos por Método de Pago -->
+<h2>Gráfico de Pagos por Método de Pago</h2>
+<canvas id="pagosChart" width="400" height="200"></canvas>
+
+<!-- Incluir Chart.js desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var ctx = document.getElementById('pagosChart').getContext('2d');
+    var pagosChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [{% for pago in pagos_grouped %}'{{ pago.metodo_pago }}',{% endfor %}],
+            datasets: [{
+                label: 'Total Monto',
+                data: [{% for pago in pagos_grouped %}{{ pago.total_monto }},{% endfor %}],
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
