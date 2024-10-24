@@ -16,6 +16,28 @@
     </div>
     <button type="submit" class="btn btn-primary">Filtrar</button>
 </form>
+<!-- Desglose de Pagos por Método de Pago -->
+<h2>Pagos por Método de Pago</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Método de Pago</th>
+            <th>Total Monto</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for pago in pagos_grouped %}
+        <tr>
+            <td>{{ pago.metodo_pago }}</td>
+            <td>{{ pago.total_monto }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="2">No hay pagos en este rango de fechas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
 <!-- Ventas -->
 <h2>Ventas</h2>
@@ -72,29 +94,6 @@
     </tbody>
 </table>
 <p><strong>Total Pagos:</strong> {{ total_pagos }}</p>
-
-<!-- Desglose de Pagos por Método de Pago -->
-<h2>Pagos por Método de Pago</h2>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Método de Pago</th>
-            <th>Total Monto</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for pago in pagos_grouped %}
-        <tr>
-            <td>{{ pago.metodo_pago }}</td>
-            <td>{{ pago.total_monto }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="2">No hay pagos en este rango de fechas.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 
 <!-- (Opcional) Gráfico de Pagos por Método de Pago -->
 <h2>Gráfico de Pagos por Método de Pago</h2>
