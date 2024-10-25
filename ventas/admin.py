@@ -67,7 +67,11 @@ class VentaReservaAdmin(admin.ModelAdmin):
         'productos_y_cantidades', 'total_servicios', 
         'total_productos', 'total', 'pagado', 'saldo_pendiente'
     )
-    readonly_fields = ('total', 'pagado', 'saldo_pendiente', 'estado_pago')
+    readonly_fields = (
+        'total', 'pagado', 'saldo_pendiente', 'estado_pago',
+        'productos_y_cantidades', 'servicios_y_cantidades',
+        'total_productos', 'total_servicios'
+    )
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
     list_filter = ()  # Quita el filtro por defecto
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
@@ -96,7 +100,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
         }),
     )
     def changelist_view(self, request, extra_context=None):
-            return super().changelist_view(request, extra_context=extra_context)
+        return super().changelist_view(request, extra_context=extra_context)
     
     # Guardar cambios con registro de movimiento
     def save_model(self, request, obj, form, change):
