@@ -5,7 +5,7 @@
 
 <p><strong>Cliente:</strong> {{ venta.cliente.nombre }}</p>
 <p><strong>Fecha Reserva:</strong> {{ venta.fecha_reserva|date:"Y-m-d H:i" }}</p>
-<p><strong>Estado:</strong> {{ venta.estado }}</p>
+<p><strong>Estado de Pago:</strong> {{ venta.estado_pago }}</p>
 <p><strong>Total:</strong> {{ venta.total }} CLP</p>
 <p><strong>Pagado:</strong> {{ venta.pagado }} CLP</p>
 <p><strong>Saldo Pendiente:</strong> {{ venta.saldo_pendiente }} CLP</p>
@@ -13,7 +13,10 @@
 <h2>Servicios</h2>
 <ul>
     {% for reserva_servicio in venta.reservaservicios.all %}
-        <li>{{ reserva_servicio.servicio.nombre }} (x{{ reserva_servicio.cantidad_personas }})</li>
+        <li>
+            {{ reserva_servicio.servicio.nombre }} (x{{ reserva_servicio.cantidad_personas }}) -
+            Fecha: {{ reserva_servicio.fecha_agendamiento|date:"Y-m-d H:i" }}
+        </li>
     {% empty %}
         <li>No hay servicios</li>
     {% endfor %}

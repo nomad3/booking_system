@@ -72,11 +72,15 @@ class VentaReserva(models.Model):
     productos = models.ManyToManyField(Producto, through='ReservaProducto')
     servicios = models.ManyToManyField(Servicio, through='ReservaServicio')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    fecha_reserva = models.DateTimeField(null=True, blank=True)
+    fecha_reserva = models.DateTimeField(
+        null=True, 
+        blank=True, 
+        verbose_name='Fecha Venta Reserva'  # Agregar verbose_name
+    )    
     total = models.DecimalField(max_digits=10, decimal_places=0, default=0)
     pagado = models.DecimalField(max_digits=10, decimal_places=0, default=0)
     saldo_pendiente = models.DecimalField(max_digits=10, decimal_places=0, default=0)
-    estado = models.CharField(
+    estado_pago = models.CharField(
         max_length=20,
         choices=[
             ('pendiente', 'Pendiente'),
@@ -84,7 +88,29 @@ class VentaReserva(models.Model):
             ('parcial', 'Parcialmente Pagado'),
             ('cancelado', 'Cancelado'),
         ],
-        default='pendiente'
+        default='pendiente',
+        verbose_name='Estado de Pago'
+    )
+    ESTADO_RESERVA_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('checkin', 'Check-in'),
+        ('checkout', 'Check-out'),
+    ]
+    estado_reserva = models.CharField(
+        max_length=10,
+        choices=ESTADO_RESERVA_CHOICES,
+        default='pendiente',
+        verbose_name='Estado de Reserva'
+    )
+    codigo_giftcard = models.CharField(
+        max_length=50, 
+        blank=True, 
+        null=True, 
+        verbose_name='Código GiftCard'
+    )
+    cobrado = models.BooleanField(
+        default=False, 
+        verbose_name='Cobrado'
     )
     numero_documento_fiscal = models.CharField(max_length=100, null=True, blank=True)
     comentarios = models.TextField(null=True, blank=True)
@@ -191,6 +217,7 @@ class Pago(models.Model):
     fecha_pago = models.DateTimeField(default=timezone.now)
     monto = models.DecimalField(max_digits=10, decimal_places=0)
     metodo_pago = models.CharField(max_length=100, choices=METODOS_PAGO)
+    usuario = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return f"Pago de {self.monto} para {self.venta_reserva}"

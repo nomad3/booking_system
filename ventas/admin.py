@@ -62,17 +62,31 @@ class VentaReservaAdmin(admin.ModelAdmin):
     list_per_page = 50  
     autocomplete_fields = ['cliente']
     list_display = (
-        'id', 'cliente', 'fecha_reserva', 'estado', 
-        'servicios_y_cantidades', 'productos_y_cantidades', 
-        'total_servicios', 'total_productos', 
-        'total', 'pagado', 'saldo_pendiente'
+        'id', 'cliente', 'fecha_reserva', 'estado_pago', 
+        'estado_reserva', 'servicios_y_cantidades', 
+        'productos_y_cantidades', 'total_servicios', 
+        'total_productos', 'total', 'pagado', 'saldo_pendiente'
     )
     readonly_fields = ('total', 'pagado', 'saldo_pendiente')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
     list_filter = ()  # Quita el filtro por defecto
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
     list_per_page = 20  # Paginación
-
+    fieldsets = (
+        (None, {
+            'fields': (
+                'cliente', 
+                'fecha_reserva', 
+                'estado_pago', 
+                'estado_reserva', 
+                'codigo_giftcard', 
+                'cobrado'
+            )
+        }),
+        ('Detalles', {
+            'fields': ('comentarios',)
+        }),
+    )
     def changelist_view(self, request, extra_context=None):
             return super().changelist_view(request, extra_context=extra_context)
     
@@ -159,6 +173,8 @@ class PagoAdmin(admin.ModelAdmin):
     list_display = ('venta_reserva', 'monto', 'metodo_pago', 'fecha_pago')
 
     def save_model(self, request, obj, form, change):
+        if not obj.usuario:
+            obj.usuario = request.user  # Asigna el usuario actual
         if change:
             tipo = "Actualización de Pago"
             descripcion = f"Se ha actualizado el pago de {obj.monto} para la venta/reserva #{obj.venta_reserva.id}."

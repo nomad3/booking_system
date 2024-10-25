@@ -449,6 +449,18 @@ def caja_diaria_view(request):
         fecha_inicio_parsed, fecha_fin_parsed = fecha_fin_parsed, fecha_inicio_parsed
         fecha_inicio, fecha_fin = fecha_fin, fecha_inicio
 
+    # Obtener el usuario seleccionado del parámetro GET
+    usuario_id = request.GET.get('usuario')
+
+    # Obtener todos los usuarios para el filtro
+    usuarios = User.objects.all()
+
+    # Filtrar los pagos por usuario si se ha seleccionado uno
+    if usuario_id:
+        pagos = pagos.filter(usuario_id=usuario_id)
+    else:
+        usuario_id = ''
+
     # Ajustar fecha_fin para incluir todo el día
     fecha_fin_parsed += timedelta(days=1)
 
@@ -477,6 +489,8 @@ def caja_diaria_view(request):
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         'pagos_grouped': pagos_grouped,
+        'usuarios': usuarios,
+        'usuario_id': usuario_id,
     }
 
     return render(request, 'ventas/caja_diaria.html', context)
