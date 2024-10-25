@@ -132,11 +132,11 @@ class VentaReserva(models.Model):
         self.pagado = total_pagos
         self.saldo_pendiente = self.total - self.pagado
         if self.saldo_pendiente <= 0:
-            self.estado = 'pagado'
+            self.estado_pago = 'pagado'
         elif self.pagado > 0:
-            self.estado = 'parcial'
+            self.estado_pago = 'parcial'
         else:
-            self.estado = 'pendiente'
+            self.estado_pago = 'pendiente'
         self.save()
 
     def actualizar_total(self):
