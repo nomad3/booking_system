@@ -68,7 +68,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
         'total_productos', 'total', 'pagado', 'saldo_pendiente'
     )
     readonly_fields = (
-        'total', 'pagado', 'saldo_pendiente', 'estado_pago',
+        'id', 'total', 'pagado', 'saldo_pendiente', 'estado_pago',
         'productos_y_cantidades', 'servicios_y_cantidades',
         'total_productos', 'total_servicios'
     )
