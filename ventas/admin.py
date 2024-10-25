@@ -67,7 +67,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
         'productos_y_cantidades', 'total_servicios', 
         'total_productos', 'total', 'pagado', 'saldo_pendiente'
     )
-    readonly_fields = ('total', 'pagado', 'saldo_pendiente')
+    readonly_fields = ('total', 'pagado', 'saldo_pendiente', 'estado_pago')
     inlines = [ReservaProductoInline, ReservaServicioInline, PagoInline]
     list_filter = ()  # Quita el filtro por defecto
     search_fields = ('cliente__nombre', 'cliente__email', 'cliente__telefono')
@@ -75,12 +75,20 @@ class VentaReservaAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
             'fields': (
-                'cliente', 
-                'fecha_reserva', 
-                'estado_pago', 
-                'estado_reserva', 
-                'codigo_giftcard', 
-                'cobrado'
+                'id',
+                'cliente',
+                'fecha_reserva',
+                'total',
+                'pagado',
+                'saldo_pendiente',
+                'servicios_y_cantidades',
+                'productos_y_cantidades',
+                'cobrado',
+                'estado_pago',
+                'estado_reserva',
+                'codigo_giftcard',
+                'total_servicios',
+                'total_productos'
             )
         }),
         ('Detalles', {

@@ -47,21 +47,24 @@ def venta_reserva_list(request):
     if not fecha_fin:
         fecha_fin = today.strftime('%Y-%m-%d')
 
-    # Parse the date strings to date objects
-    fecha_inicio_parsed = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-    fecha_fin_parsed = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
+    # Parse the date strings to date objects with timezone awareness
+    fecha_inicio_parsed = timezone.make_aware(datetime.strptime(fecha_inicio, '%Y-%m-%d'))
+    fecha_fin_parsed = timezone.make_aware(datetime.strptime(fecha_fin, '%Y-%m-%d')) + timedelta(days=1)
 
-    # Build the queryset
-    qs = VentaReserva.objects.all()
+    # Build the queryset with select_related and prefetch_related
+    qs = VentaReserva.objects.select_related('cliente').prefetch_related(
+        'reservaservicios__servicio',
+        'reservaproductos__producto',
+    )
 
     # Apply date range filter (inclusive of the end date)
     qs = qs.filter(fecha_reserva__range=(fecha_inicio_parsed, fecha_fin_parsed))
 
     # Apply filters based on category and service
-    if categoria_servicio_id:
-        qs = qs.filter(reservaservicios__servicio__categoria_id=categoria_servicio_id)
-    if servicio_id:
-        qs = qs.filter(reservaservicios__servicio_id=servicio_id)
+    if categoria_servicio_id and categoria_servicio_id.isdigit():
+        qs = qs.filter(reservaservicios__servicio__categoria_id=int(categoria_servicio_id))
+    if servicio_id and servicio_id.isdigit():
+        qs = qs.filter(reservaservicios__servicio_id=int(servicio_id))
 
     # Remove duplicates if joins create duplicates
     qs = qs.distinct()
