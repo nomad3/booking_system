@@ -79,7 +79,7 @@ class VentaReservaAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
             'fields': (
-                'id',
+                'numero_documento_fiscal',
                 'cliente',
                 'fecha_reserva',
                 'total',
