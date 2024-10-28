@@ -1,3 +1,8 @@
+<!-- ventas/templates/ventas/caja_diaria.html -->
+
+{% load ventas_extras %}
+{% load humanize %}  <!-- Para usar intcomma si es necesario -->
+
 {% extends "admin/base_site.html" %}
 
 {% block content %}
@@ -27,6 +32,36 @@
     <button type="submit" class="btn btn-primary">Filtrar</button>
 </form>
 
+<!-- Pagos -->
+<h2>Pagos</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Venta</th>
+            <th>Fecha Pago</th>
+            <th>Monto</th>
+            <th>Método de Pago</th> <!-- Nueva Columna -->
+        </tr>
+    </thead>
+    <tbody>
+        {% for pago in pagos %}
+        <tr>
+            <td>{{ pago.id }}</td>
+            <td>{{ pago.venta_reserva }}</td>
+            <td>{{ pago.fecha_pago|date:"Y-m-d" }}</td>
+            <td>{{ pago.monto|formato_clp }}</td> <!-- Aplicar formato CLP -->
+            <td>{{ pago.metodo_pago }}</td> <!-- Mostrar Método de Pago -->
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">No hay pagos en este rango de fechas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<p><strong>Total Pagos:</strong> {{ total_pagos|formato_clp }}</p> <!-- Aplicar formato CLP -->
+
 <!-- Desglose de Pagos por Método de Pago -->
 <h2>Pagos por Método de Pago</h2>
 <table class="table table-bordered">
@@ -41,7 +76,7 @@
         {% for pago in pagos_grouped %}
         <tr>
             <td>{{ pago.metodo_pago }}</td>
-            <td>{{ pago.total_monto }}</td>
+            <td>{{ pago.total_monto|formato_clp }}</td> <!-- Aplicar formato CLP -->
             <td>{{ pago.cantidad_transacciones }}</td> <!-- Mostrar el Conteo -->
         </tr>
         {% empty %}
@@ -51,34 +86,6 @@
         {% endfor %}
     </tbody>
 </table>
-
-<!-- Pagos -->
-<h2>Pagos</h2>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Venta</th>
-            <th>Fecha Pago</th>
-            <th>Monto</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for pago in pagos %}
-        <tr>
-            <td>{{ pago.id }}</td>
-            <td>{{ pago.venta_reserva }}</td>
-            <td>{{ pago.fecha_pago|date:"Y-m-d" }}</td>
-            <td>{{ pago.monto }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="4">No hay pagos en este rango de fechas.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<p><strong>Total Pagos:</strong> {{ total_pagos }}</p>
 
 <!-- (Opcional) Gráfico de Pagos por Método de Pago -->
 <h2>Gráfico de Pagos por Método de Pago</h2>
