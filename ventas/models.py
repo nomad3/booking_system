@@ -217,7 +217,7 @@ class Pago(models.Model):
     fecha_pago = models.DateTimeField(default=timezone.now)
     monto = models.DecimalField(max_digits=10, decimal_places=0)
     metodo_pago = models.CharField(max_length=100, choices=METODOS_PAGO)
-    usuario = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    usuario = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='pagos')  # Permitir nulos
 
     def __str__(self):
         return f"Pago de {self.monto} para {self.venta_reserva}"

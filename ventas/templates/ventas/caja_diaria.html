@@ -1,10 +1,11 @@
-{% extends "admin/base_site.html" %}
-{% include 'base_menu.html' %}
+<!-- ventas/templates/ventas/caja_diaria.html -->
+
+{% extends "base.html" %}
 
 {% block content %}
 <h1>Caja Diaria</h1>
 
-<!-- Formulario de Filtro por Rango de Fechas -->
+<!-- Formulario de Filtro por Rango de Fechas y Usuario -->
 <form method="get" class="form-inline mb-4">
     <div class="form-group mr-2">
         <label for="fecha_inicio" class="mr-2">Fecha Inicio:</label>
@@ -17,36 +18,42 @@
     <div class="form-group mr-2">
         <label for="usuario" class="mr-2">Usuario:</label>
         <select id="usuario" name="usuario" class="form-control">
-            <option value="">Todos</option>
-            {% for user in usuarios %}
-                <option value="{{ user.id }}" {% if user.id|stringformat:"s" == usuario_id %}selected{% endif %}>{{ user.username }}</option>
+            <option value="">-- Todos los Usuarios --</option>
+            {% for usuario in usuarios %}
+                <option value="{{ usuario.id }}" {% if usuario.id|stringformat:"s" == usuario_id %}selected{% endif %}>{{ usuario.username }}</option>
             {% endfor %}
         </select>
     </div>
     <button type="submit" class="btn btn-primary">Filtrar</button>
 </form>
-<!-- Desglose de Pagos por Método de Pago -->
-<h2>Pagos por Método de Pago</h2>
-<table class="table table-bordered">
+
+<!-- Ventas -->
+<h2>Ventas</h2>
+<table class="table table-striped">
     <thead>
         <tr>
-            <th>Método de Pago</th>
-            <th>Total Monto</th>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Fecha Reserva Servicio</th>
+            <th>Total</th>
         </tr>
     </thead>
     <tbody>
-        {% for pago in pagos_grouped %}
+        {% for venta in ventas %}
         <tr>
-            <td>{{ pago.metodo_pago }}</td>
-            <td>{{ pago.total_monto }}</td>
+            <td>{{ venta.id }}</td>
+            <td>{{ venta.cliente }}</td>
+            <td>{{ venta.fecha_reserva|date:"Y-m-d" }}</td>
+            <td>{{ venta.total }}</td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="2">No hay pagos en este rango de fechas.</td>
+            <td colspan="4">No hay ventas en este rango de fechas.</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+<p><strong>Total Ventas:</strong> {{ total_ventas }}</p>
 
 <!-- Pagos -->
 <h2>Pagos</h2>
@@ -57,7 +64,6 @@
             <th>Venta</th>
             <th>Fecha Pago</th>
             <th>Monto</th>
-            <th>Usuario</th> <!-- Agrega esta columna -->
         </tr>
     </thead>
     <tbody>
@@ -67,16 +73,40 @@
             <td>{{ pago.venta_reserva }}</td>
             <td>{{ pago.fecha_pago|date:"Y-m-d" }}</td>
             <td>{{ pago.monto }}</td>
-            <td>{{ pago.usuario.username }}</td> <!-- Muestra el usuario -->
         </tr>
         {% empty %}
         <tr>
-            <td colspan="5">No hay pagos en este rango de fechas.</td>
+            <td colspan="4">No hay pagos en este rango de fechas.</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 <p><strong>Total Pagos:</strong> {{ total_pagos }}</p>
+
+<!-- Desglose de Pagos por Método de Pago -->
+<h2>Pagos por Método de Pago</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Método de Pago</th>
+            <th>Total Monto</th>
+            <th>Cantidad de Transacciones</th> <!-- Nueva Columna -->
+        </tr>
+    </thead>
+    <tbody>
+        {% for pago in pagos_grouped %}
+        <tr>
+            <td>{{ pago.metodo_pago }}</td>
+            <td>{{ pago.total_monto }}</td>
+            <td>{{ pago.cantidad_transacciones }}</td> <!-- Mostrar el Conteo -->
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3">No hay pagos en este rango de fechas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
 <!-- (Opcional) Gráfico de Pagos por Método de Pago -->
 <h2>Gráfico de Pagos por Método de Pago</h2>
@@ -95,6 +125,12 @@
                 data: [{% for pago in pagos_grouped %}{{ pago.total_monto }},{% endfor %}],
                 backgroundColor: 'rgba(54, 162, 235, 0.6)',
                 borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Cantidad de Transacciones',
+                data: [{% for pago in pagos_grouped %}{{ pago.cantidad_transacciones }},{% endfor %}],
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                borderColor: 'rgba(255,99,132,1)',
                 borderWidth: 1
             }]
         },

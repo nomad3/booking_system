@@ -1,7 +1,7 @@
 
 from rest_framework import viewsets
 from rest_framework.response import Response
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Count
 from django.contrib.auth.decorators import user_passes_test
 import csv
 from django.http import HttpResponse
@@ -452,11 +452,19 @@ def caja_diaria_view(request):
         fecha_inicio_parsed, fecha_fin_parsed = fecha_fin_parsed, fecha_inicio_parsed
         fecha_inicio, fecha_fin = fecha_fin, fecha_inicio
 
+    # Ajustar fecha_fin para incluir todo el día
+    fecha_fin_parsed += timedelta(days=1)
+
     # Obtener el usuario seleccionado del parámetro GET
     usuario_id = request.GET.get('usuario')
 
     # Obtener todos los usuarios para el filtro
     usuarios = User.objects.all()
+
+    # Filtrar Pago basado en fecha_pago
+    pagos = Pago.objects.filter(
+        fecha_pago__range=(fecha_inicio_parsed, fecha_fin_parsed)
+    )
 
     # Filtrar los pagos por usuario si se ha seleccionado uno
     if usuario_id:
@@ -464,25 +472,20 @@ def caja_diaria_view(request):
     else:
         usuario_id = ''
 
-    # Ajustar fecha_fin para incluir todo el día
-    fecha_fin_parsed += timedelta(days=1)
-
     # Filtrar VentaReserva basado en ReservaServicio.fecha_agendamiento
     ventas = VentaReserva.objects.filter(
         reservaservicios__fecha_agendamiento__range=(fecha_inicio_parsed, fecha_fin_parsed)
     ).distinct()
 
-    # Filtrar Pago basado en fecha_pago
-    pagos = Pago.objects.filter(
-        fecha_pago__range=(fecha_inicio_parsed, fecha_fin_parsed)
-    )
-
     # Calcular totales
     total_ventas = ventas.aggregate(total=Sum('total'))['total'] or 0
     total_pagos = pagos.aggregate(total=Sum('monto'))['total'] or 0
 
-    # Agrupar pagos por método de pago
-    pagos_grouped = pagos.values('metodo_pago').annotate(total_monto=Sum('monto')).order_by('metodo_pago')
+    # Agrupar pagos por método de pago y contar transacciones
+    pagos_grouped = pagos.values('metodo_pago').annotate(
+        total_monto=Sum('monto'),
+        cantidad_transacciones=Count('id')
+    ).order_by('metodo_pago')
 
     context = {
         'ventas': ventas,
