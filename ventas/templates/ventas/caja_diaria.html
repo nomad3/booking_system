@@ -27,33 +27,30 @@
     <button type="submit" class="btn btn-primary">Filtrar</button>
 </form>
 
-<!-- Ventas -->
-<h2>Ventas</h2>
-<table class="table table-striped">
+<!-- Desglose de Pagos por Método de Pago -->
+<h2>Pagos por Método de Pago</h2>
+<table class="table table-bordered">
     <thead>
         <tr>
-            <th>ID</th>
-            <th>Cliente</th>
-            <th>Fecha Reserva Servicio</th>
-            <th>Total</th>
+            <th>Método de Pago</th>
+            <th>Total Monto</th>
+            <th>Cantidad de Transacciones</th> <!-- Nueva Columna -->
         </tr>
     </thead>
     <tbody>
-        {% for venta in ventas %}
+        {% for pago in pagos_grouped %}
         <tr>
-            <td>{{ venta.id }}</td>
-            <td>{{ venta.cliente }}</td>
-            <td>{{ venta.fecha_reserva|date:"Y-m-d" }}</td>
-            <td>{{ venta.total }}</td>
+            <td>{{ pago.metodo_pago }}</td>
+            <td>{{ pago.total_monto }}</td>
+            <td>{{ pago.cantidad_transacciones }}</td> <!-- Mostrar el Conteo -->
         </tr>
         {% empty %}
         <tr>
-            <td colspan="4">No hay ventas en este rango de fechas.</td>
+            <td colspan="3">No hay pagos en este rango de fechas.</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-<p><strong>Total Ventas:</strong> {{ total_ventas }}</p>
 
 <!-- Pagos -->
 <h2>Pagos</h2>
@@ -82,31 +79,6 @@
     </tbody>
 </table>
 <p><strong>Total Pagos:</strong> {{ total_pagos }}</p>
-
-<!-- Desglose de Pagos por Método de Pago -->
-<h2>Pagos por Método de Pago</h2>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Método de Pago</th>
-            <th>Total Monto</th>
-            <th>Cantidad de Transacciones</th> <!-- Nueva Columna -->
-        </tr>
-    </thead>
-    <tbody>
-        {% for pago in pagos_grouped %}
-        <tr>
-            <td>{{ pago.metodo_pago }}</td>
-            <td>{{ pago.total_monto }}</td>
-            <td>{{ pago.cantidad_transacciones }}</td> <!-- Mostrar el Conteo -->
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="3">No hay pagos en este rango de fechas.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 
 <!-- (Opcional) Gráfico de Pagos por Método de Pago -->
 <h2>Gráfico de Pagos por Método de Pago</h2>
