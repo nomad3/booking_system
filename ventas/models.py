@@ -56,14 +56,6 @@ class Compra(models.Model):
         super().save(*args, **kwargs)
         self.calcular_total()
 
-    def calcular_total(self):
-        total = self.detalles.aggregate(
-            total=Sum(F('cantidad') * F('precio_unitario'))
-        )['total'] or 0
-        if self.total != total:
-            self.total = total
-            super().save(update_fields=['total'])
-
 class GiftCard(models.Model):
     ESTADO_CHOICES = [
         ('por_cobrar', 'Por Cobrar'),

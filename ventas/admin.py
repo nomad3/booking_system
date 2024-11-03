@@ -178,6 +178,7 @@ class DetalleCompraInline(admin.TabularInline):
     extra = 1
     autocomplete_fields = ['producto']
     fields = ['producto', 'descripcion', 'cantidad', 'precio_unitario']
+    compra = models.ForeignKey(Compra, on_delete=models.CASCADE, related_name='detalles')
 
 @admin.register(Compra)
 class CompraAdmin(admin.ModelAdmin):
@@ -189,6 +190,16 @@ class CompraAdmin(admin.ModelAdmin):
     readonly_fields = ('total',)
     autocomplete_fields = ['proveedor']
     list_select_related = ('proveedor',)
+
+    def save_model(self, request, obj, form, change):
+        # Guarda el objeto padre sin calcular el total aún
+        super().save_model(request, obj, form, change)
+
+    def save_related(self, request, form, formsets, change):
+        # Guarda los inlines (detalles de compra)
+        super().save_related(request, form, formsets, change)
+        # Ahora que los detalles están guardados, calcula el total
+        form.instance.calcular_total()
 
 @admin.register(GiftCard)
 class GiftCardAdmin(admin.ModelAdmin):
