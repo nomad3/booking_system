@@ -10,12 +10,74 @@ from django.db import transaction
 
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=100)
-    contacto = models.CharField(max_length=100)
-    email = models.EmailField()
+    direccion = models.CharField(max_length=255, blank=True, null=True)
+    telefono = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    # Otros campos relevantes
 
     def __str__(self):
         return self.nombre
 
+
+class Compra(models.Model):
+    METODOS_PAGO = [
+        ('tarjeta', 'Tarjeta de Crédito/Débito'),
+        ('efectivo', 'Efectivo'),
+        ('webpay', 'WebPay'),
+        # Agrega aquí todos los métodos de pago que utilizas
+    ]
+
+    fecha_compra = models.DateField(default=timezone.now)
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True, blank=True)
+    metodo_pago = models.CharField(max_length=50, choices=METODOS_PAGO)
+    numero_documento = models.CharField(max_length=100, null=True, blank=True)
+    total = models.DecimalField(max_digits=10, decimal_places=0, default=0)
+
+    def __str__(self):
+        return f"Compra #{self.id} - {self.proveedor}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.calcular_total()
+
+    def calcular_total(self):
+        total = self.detalles.aggregate(
+            total=Sum(F('cantidad') * F('precio_unitario'))
+        )['total'] or 0
+        if self.total != total:
+            self.total = total
+            super().save(update_fields=['total'])
+
+
+class DetalleCompra(models.Model):
+    compra = models.ForeignKey(Compra, on_delete=models.CASCADE, related_name='detalles')
+    producto = models.ForeignKey('Producto', on_delete=models.SET_NULL, null=True, blank=True)
+    descripcion = models.CharField(max_length=255)
+    cantidad = models.PositiveIntegerField()
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=0)
+
+    def __str__(self):
+        return f"{self.descripcion} - {self.cantidad} x {self.precio_unitario}"
+
+    def save(self, *args, **kwargs):
+        cantidad_anterior = None
+        if self.pk:
+            cantidad_anterior = DetalleCompra.objects.get(pk=self.pk).cantidad
+
+        super().save(*args, **kwargs)
+
+        # Actualizar el stock del producto si está vinculado
+        if self.producto:
+            incremento = self.cantidad
+            if cantidad_anterior is not None:
+                incremento -= cantidad_anterior
+            self.producto.incrementar_inventario(incremento)
+
+    def delete(self, *args, **kwargs):
+        # Al eliminar, restar la cantidad del inventario
+        if self.producto:
+            self.producto.incrementar_inventario(-self.cantidad)
+        super().delete(*args, **kwargs)
 class CategoriaProducto(models.Model):
     nombre = models.CharField(max_length=100)
 
@@ -38,6 +100,10 @@ class Producto(models.Model):
             self.save()
         else:
             raise ValueError('No hay suficiente inventario disponible.')
+
+    def incrementar_inventario(self, cantidad):
+        self.cantidad_disponible += cantidad
+        self.save()
 
 class CategoriaServicio(models.Model):
     nombre = models.CharField(max_length=100)

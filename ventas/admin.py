@@ -7,7 +7,7 @@ from django.db.models import Sum
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.forms import DateInput, TimeInput, Select
-from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente
+from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente, Compra, DetalleCompra
 
 # Personalización del título de la administración
 admin.site.site_header = _("Sistema de Gestión de Ventas")
@@ -164,14 +164,35 @@ class VentaReservaAdmin(admin.ModelAdmin):
         ).select_related('cliente')
         return queryset
 
+@admin.register(Proveedor)
 class ProveedorAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'contacto', 'email')
+    list_display = ('nombre', 'direccion', 'telefono', 'email')
+    search_fields = ('nombre',)
+
+class DetalleCompraInline(admin.TabularInline):
+    model = DetalleCompra
+    extra = 1
+    autocomplete_fields = ['producto']
+    fields = ['producto', 'descripcion', 'cantidad', 'precio_unitario']
+
+@admin.register(Compra)
+class CompraAdmin(admin.ModelAdmin):
+    list_display = ('id', 'fecha_compra', 'proveedor', 'metodo_pago', 'numero_documento', 'total')
+    list_filter = ('fecha_compra', 'metodo_pago', 'proveedor')
+    search_fields = ('numero_documento', 'proveedor__nombre')
+    inlines = [DetalleCompraInline]
+    date_hierarchy = 'fecha_compra'
+    readonly_fields = ('total',)
+    autocomplete_fields = ['proveedor']
+    list_select_related = ('proveedor',)
 
 class CategoriaProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre',)
 
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'precio_base', 'cantidad_disponible', 'categoria', 'proveedor')
+    list_display = ('nombre', 'precio_base', 'cantidad_disponible')
+    search_fields = ('nombre',)
+    list_filter = ('categoria',)  # Si tienes categorías
 
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'email', 'telefono')
@@ -201,7 +222,6 @@ class PagoAdmin(admin.ModelAdmin):
         registrar_movimiento(obj.venta_reserva.cliente, "Eliminación de Pago", descripcion, request.user)
         super().delete_model(request, obj)
 
-admin.site.register(Proveedor, ProveedorAdmin)
 admin.site.register(CategoriaProducto, CategoriaProductoAdmin)
 admin.site.register(Producto, ProductoAdmin)
 admin.site.register(VentaReserva, VentaReservaAdmin)
