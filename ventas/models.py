@@ -127,6 +127,7 @@ class DetalleCompra(models.Model):
         if self.producto:
             self.producto.incrementar_inventario(-self.cantidad)
         super().delete(*args, **kwargs)
+
 class CategoriaProducto(models.Model):
     nombre = models.CharField(max_length=100)
 
@@ -152,6 +153,8 @@ class Producto(models.Model):
 
     def incrementar_inventario(self, cantidad):
         self.cantidad_disponible += cantidad
+        if self.cantidad_disponible < 0:
+            raise ValueError('El inventario no puede ser negativo.')
         self.save()
 
 class CategoriaServicio(models.Model):

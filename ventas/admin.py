@@ -178,7 +178,8 @@ class DetalleCompraInline(admin.TabularInline):
     extra = 1
     autocomplete_fields = ['producto']
     fields = ['producto', 'descripcion', 'cantidad', 'precio_unitario']
-    compra = models.ForeignKey(Compra, on_delete=models.CASCADE, related_name='detalles')
+    readonly_fields = ['producto']
+    show_change_link = False
 
 @admin.register(Compra)
 class CompraAdmin(admin.ModelAdmin):
