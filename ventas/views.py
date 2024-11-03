@@ -430,6 +430,7 @@ def caja_diaria_view(request):
     # Obtener rango de fechas desde los parámetros GET
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
+    metodo_pago = request.GET.get('metodo_pago')  # Nuevo filtro
 
     # Establecer fechas por defecto (hoy) si no se proporcionan
     today = timezone.localdate()
@@ -458,9 +459,6 @@ def caja_diaria_view(request):
     # Obtener el usuario seleccionado del parámetro GET
     usuario_id = request.GET.get('usuario')
 
-    # Obtener el método de pago seleccionado del parámetro GET
-    metodo_pago = request.GET.get('metodo_pago')
-
     # Obtener todos los usuarios para el filtro
     usuarios = User.objects.all()
 
@@ -475,9 +473,11 @@ def caja_diaria_view(request):
     else:
         usuario_id = ''
 
-    # Filtrar los pagos por método de pago si se ha seleccionado uno
+    # Filtrar por método de pago si se ha seleccionado uno
     if metodo_pago:
         pagos = pagos.filter(metodo_pago=metodo_pago)
+    else:
+        metodo_pago = ''
 
     # Filtrar VentaReserva basado en ReservaServicio.fecha_agendamiento
     ventas = VentaReserva.objects.filter(
@@ -494,8 +494,8 @@ def caja_diaria_view(request):
         cantidad_transacciones=Count('id')
     ).order_by('metodo_pago')
 
-    # Obtener todos los métodos de pago para el filtro
-    metodo_pagos = Pago.objects.values_list('metodo_pago', flat=True).distinct()
+    # Obtener los métodos de pago para el filtro
+    METODOS_PAGO = Pago.METODOS_PAGO
 
     context = {
         'ventas': ventas,
@@ -507,8 +507,8 @@ def caja_diaria_view(request):
         'pagos_grouped': pagos_grouped,
         'usuarios': usuarios,
         'usuario_id': usuario_id,
-        'metodo_pagos': metodo_pagos,  # Añadir los métodos de pago al contexto
-        'metodo_pago_selected': metodo_pago,  # Para mantener la selección
+        'metodo_pago': metodo_pago,  # Añadir al contexto
+        'METODOS_PAGO': METODOS_PAGO,  # Añadir al contexto
     }
 
     return render(request, 'ventas/caja_diaria.html', context)

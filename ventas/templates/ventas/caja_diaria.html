@@ -1,7 +1,8 @@
 <!-- ventas/templates/ventas/caja_diaria.html -->
-{% extends "admin/base_site.html" %}
-
 {% load ventas_extras %}
+{% load humanize %}  <!-- Para usar intcomma si es necesario -->
+
+{% extends "admin/base_site.html" %}
 
 {% block content %}
 {% include 'base_menu.html' %}
@@ -10,14 +11,19 @@
 
 <!-- Formulario de Filtro por Rango de Fechas, Usuario y Método de Pago -->
 <form method="get" class="form-inline mb-4">
+    <!-- Filtro de Fecha Inicio -->
     <div class="form-group mr-2">
         <label for="fecha_inicio" class="mr-2">Fecha Inicio:</label>
         <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio }}" class="form-control">
     </div>
+    
+    <!-- Filtro de Fecha Fin -->
     <div class="form-group mr-2">
         <label for="fecha_fin" class="mr-2">Fecha Fin:</label>
         <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin }}" class="form-control">
     </div>
+    
+    <!-- Filtro de Usuario -->
     <div class="form-group mr-2">
         <label for="usuario" class="mr-2">Usuario:</label>
         <select id="usuario" name="usuario" class="form-control">
@@ -27,15 +33,19 @@
             {% endfor %}
         </select>
     </div>
+    
+    <!-- Filtro de Método de Pago -->
     <div class="form-group mr-2">
         <label for="metodo_pago" class="mr-2">Método de Pago:</label>
         <select id="metodo_pago" name="metodo_pago" class="form-control">
-            <option value="">-- Todos los Métodos de Pago --</option>
-            {% for metodo in metodos_pago %}
-                <option value="{{ metodo }}" {% if metodo == metodo_pago_selected %}selected{% endif %}>{{ metodo }}</option>
+            <option value="">-- Todos los Métodos --</option>
+            {% for metodo in metodo_pagos %}
+                <option value="{{ metodo }}" {% if metodo == metodo_pago %}selected{% endif %}>{{ metodo }}</option>
             {% endfor %}
         </select>
     </div>
+    
+    <!-- Botón de Filtrar -->
     <button type="submit" class="btn btn-primary">Filtrar</button>
 </form>
 
