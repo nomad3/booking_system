@@ -426,6 +426,7 @@ def auditoria_movimientos_view(request):
 
     return render(request, 'ventas/auditoria_movimientos.html', context)
 
+@user_passes_test(es_administrador)  # Restringir el acceso a administradores
 def caja_diaria_view(request):
     # Obtener rango de fechas desde los parámetros GET
     fecha_inicio = request.GET.get('fecha_inicio')
