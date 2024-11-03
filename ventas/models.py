@@ -48,6 +48,47 @@ class Compra(models.Model):
             self.total = total
             super().save(update_fields=['total'])
 
+class GiftCard(models.Model):
+    ESTADO_CHOICES = [
+        ('por_cobrar', 'Por Cobrar'),
+        ('cobrado', 'Cobrado'),
+    ]
+
+    codigo = models.CharField(max_length=12, unique=True, editable=False)
+    monto_inicial = models.DecimalField(max_digits=10, decimal_places=0)
+    monto_disponible = models.DecimalField(max_digits=10, decimal_places=0)
+    fecha_emision = models.DateField(default=timezone.now)
+    fecha_vencimiento = models.DateField()
+    estado = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='por_cobrar')
+    cliente_comprador = models.ForeignKey('Cliente', related_name='giftcards_compradas', on_delete=models.SET_NULL, null=True, blank=True)
+    cliente_destinatario = models.ForeignKey('Cliente', related_name='giftcards_recibidas', on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"GiftCard {self.codigo} - Saldo: {self.monto_disponible}"
+
+    def save(self, *args, **kwargs):
+        if not self.codigo:
+            self.codigo = self.generar_codigo_unico()
+        if not self.monto_disponible:
+            self.monto_disponible = self.monto_inicial
+        super().save(*args, **kwargs)
+
+    def generar_codigo_unico(self):
+        while True:
+            codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+            if not GiftCard.objects.filter(codigo=codigo).exists():
+                return codigo
+
+    def usar(self, monto):
+        if self.fecha_vencimiento < timezone.now().date():
+            raise ValueError("La gift card ha expirado.")
+        if self.monto_disponible >= monto:
+            self.monto_disponible -= monto
+            if self.monto_disponible == 0:
+                self.estado = 'cobrado'
+            self.save()
+        else:
+            raise ValueError("El monto excede el saldo disponible de la gift card.")
 
 class DetalleCompra(models.Model):
     compra = models.ForeignKey(Compra, on_delete=models.CASCADE, related_name='detalles')
@@ -284,13 +325,38 @@ class Pago(models.Model):
     monto = models.DecimalField(max_digits=10, decimal_places=0)
     metodo_pago = models.CharField(max_length=100, choices=METODOS_PAGO)
     usuario = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='pagos')  # Permitir nulos
+    giftcard = models.ForeignKey(GiftCard, null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return f"Pago de {self.monto} para {self.venta_reserva}"
 
     def save(self, *args, **kwargs):
-        with transaction.atomic():  # Asegura la consistencia de los datos
+        with transaction.atomic():
+            # Validaciones y lógica para gift cards
+            if self.metodo_pago == 'giftcard':
+                if not self.giftcard:
+                    raise ValidationError("Debe seleccionar una gift card para este método de pago.")
+                if self.giftcard.fecha_vencimiento < timezone.now().date():
+                    raise ValidationError("La gift card ha expirado.")
+                if self.giftcard.monto_disponible < self.monto:
+                    raise ValidationError("El monto excede el saldo disponible en la gift card.")
+                # Descontar el monto de la gift card
+                self.giftcard.usar(self.monto)
+            else:
+                if self.giftcard:
+                    raise ValidationError("No debe seleccionar una gift card para este método de pago.")
+
             super().save(*args, **kwargs)
+            self.venta_reserva.calcular_total()
+
+    def delete(self, *args, **kwargs):
+        with transaction.atomic():
+            if self.metodo_pago == 'giftcard' and self.giftcard:
+                # Restaurar el monto a la gift card
+                self.giftcard.monto_disponible += self.monto
+                self.giftcard.estado = 'por_cobrar'
+                self.giftcard.save()
+            super().delete(*args, **kwargs)
             self.venta_reserva.calcular_total()
 
 class MovimientoCliente(models.Model):

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django import forms
+from .forms import PagoInlineForm
 from django.forms import DateTimeInput
 from datetime import date, datetime, timedelta  # Importa date, datetime, y timedelta
 from django.utils import timezone
@@ -7,7 +8,7 @@ from django.db.models import Sum
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.forms import DateInput, TimeInput, Select
-from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente, Compra, DetalleCompra
+from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente, Compra, DetalleCompra, GiftCard
 
 # Personalización del título de la administración
 admin.site.site_header = _("Sistema de Gestión de Ventas")
@@ -47,7 +48,10 @@ class ReservaProductoInline(admin.TabularInline):
 
 class PagoInline(admin.TabularInline):
     model = Pago
+    form = PagoInlineForm  # Asignar el formulario personalizado
     extra = 1
+    fields = ['fecha_pago', 'monto', 'metodo_pago', 'giftcard', 'usuario']
+    autocomplete_fields = ['giftcard', 'usuario']
 
 # Método para registrar movimientos en el sistema
 def registrar_movimiento(cliente, tipo_movimiento, descripcion, usuario):
@@ -185,6 +189,13 @@ class CompraAdmin(admin.ModelAdmin):
     readonly_fields = ('total',)
     autocomplete_fields = ['proveedor']
     list_select_related = ('proveedor',)
+
+@admin.register(GiftCard)
+class GiftCardAdmin(admin.ModelAdmin):
+    list_display = ('codigo', 'cliente_comprador', 'cliente_destinatario', 'monto_inicial', 'monto_disponible', 'fecha_emision', 'fecha_vencimiento', 'estado')
+    search_fields = ('codigo', 'cliente_comprador__nombre', 'cliente_destinatario__nombre')
+    list_filter = ('estado', 'fecha_emision', 'fecha_vencimiento')
+    readonly_fields = ('codigo', 'monto_disponible')
 
 class CategoriaProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre',)

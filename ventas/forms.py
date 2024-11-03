@@ -1,6 +1,7 @@
 from django import forms
-from .models import ReservaProducto
-
+from .models import ReservaProducto, Pago
+from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 class ReservaProductoForm(forms.ModelForm):
     class Meta:
@@ -40,3 +41,27 @@ class ReservaProductoForm(forms.ModelForm):
                     ('19:15', '19:15'),
                     ('20:30', '20:30'),
                 ]
+
+class PagoInlineForm(forms.ModelForm):
+    class Meta:
+        model = Pago
+        fields = ['fecha_pago', 'monto', 'metodo_pago', 'giftcard', 'usuario']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        metodo_pago = cleaned_data.get('metodo_pago')
+        giftcard = cleaned_data.get('giftcard')
+        monto = cleaned_data.get('monto')
+
+        if metodo_pago == 'giftcard':
+            if not giftcard:
+                raise ValidationError("Debe seleccionar una gift card para este método de pago.")
+            if giftcard.monto_disponible < monto:
+                raise ValidationError("El monto excede el saldo disponible en la gift card.")
+            if giftcard.fecha_vencimiento < timezone.now().date():
+                raise ValidationError("La gift card ha expirado.")
+        else:
+            if giftcard:
+                raise ValidationError("No debe seleccionar una gift card para este método de pago.")
+
+        return cleaned_data
