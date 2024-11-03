@@ -453,17 +453,20 @@ def caja_diaria_view(request):
         fecha_inicio, fecha_fin = fecha_fin, fecha_inicio
 
     # Ajustar fecha_fin para incluir todo el día
-    fecha_fin_parsed += timedelta(days=1)
+    fecha_fin_parsed_datetime = timezone.make_aware(datetime.combine(fecha_fin_parsed, datetime.min.time())) + timedelta(days=1)
 
     # Obtener el usuario seleccionado del parámetro GET
     usuario_id = request.GET.get('usuario')
+
+    # Obtener el método de pago seleccionado del parámetro GET
+    metodo_pago = request.GET.get('metodo_pago')
 
     # Obtener todos los usuarios para el filtro
     usuarios = User.objects.all()
 
     # Filtrar Pago basado en fecha_pago
     pagos = Pago.objects.filter(
-        fecha_pago__range=(fecha_inicio_parsed, fecha_fin_parsed)
+        fecha_pago__range=(fecha_inicio_parsed, fecha_fin_parsed_datetime)
     )
 
     # Filtrar los pagos por usuario si se ha seleccionado uno
@@ -472,9 +475,13 @@ def caja_diaria_view(request):
     else:
         usuario_id = ''
 
+    # Filtrar los pagos por método de pago si se ha seleccionado uno
+    if metodo_pago:
+        pagos = pagos.filter(metodo_pago=metodo_pago)
+
     # Filtrar VentaReserva basado en ReservaServicio.fecha_agendamiento
     ventas = VentaReserva.objects.filter(
-        reservaservicios__fecha_agendamiento__range=(fecha_inicio_parsed, fecha_fin_parsed)
+        reservaservicios__fecha_agendamiento__range=(fecha_inicio_parsed, fecha_fin_parsed_datetime)
     ).distinct()
 
     # Calcular totales
@@ -487,6 +494,9 @@ def caja_diaria_view(request):
         cantidad_transacciones=Count('id')
     ).order_by('metodo_pago')
 
+    # Obtener todos los métodos de pago para el filtro
+    metodo_pagos = Pago.objects.values_list('metodo_pago', flat=True).distinct()
+
     context = {
         'ventas': ventas,
         'pagos': pagos,
@@ -497,6 +507,8 @@ def caja_diaria_view(request):
         'pagos_grouped': pagos_grouped,
         'usuarios': usuarios,
         'usuario_id': usuario_id,
+        'metodo_pagos': metodo_pagos,  # Añadir los métodos de pago al contexto
+        'metodo_pago_selected': metodo_pago,  # Para mantener la selección
     }
 
     return render(request, 'ventas/caja_diaria.html', context)

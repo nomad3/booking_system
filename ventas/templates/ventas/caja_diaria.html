@@ -2,13 +2,14 @@
 {% extends "admin/base_site.html" %}
 
 {% load ventas_extras %}
+{% load humanize %}
 
 {% block content %}
 {% include 'base_menu.html' %}
 
 <h1>Caja Diaria</h1>
 
-<!-- Formulario de Filtro por Rango de Fechas y Usuario -->
+<!-- Formulario de Filtro por Rango de Fechas, Usuario y Método de Pago -->
 <form method="get" class="form-inline mb-4">
     <div class="form-group mr-2">
         <label for="fecha_inicio" class="mr-2">Fecha Inicio:</label>
@@ -24,6 +25,15 @@
             <option value="">-- Todos los Usuarios --</option>
             {% for usuario in usuarios %}
                 <option value="{{ usuario.id }}" {% if usuario.id|stringformat:"s" == usuario_id %}selected{% endif %}>{{ usuario.username }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group mr-2">
+        <label for="metodo_pago" class="mr-2">Método de Pago:</label>
+        <select id="metodo_pago" name="metodo_pago" class="form-control">
+            <option value="">-- Todos los Métodos de Pago --</option>
+            {% for metodo in metodos_pago %}
+                <option value="{{ metodo }}" {% if metodo == metodo_pago_selected %}selected{% endif %}>{{ metodo }}</option>
             {% endfor %}
         </select>
     </div>
