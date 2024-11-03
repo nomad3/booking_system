@@ -183,7 +183,7 @@ class Cliente(models.Model):
     ciudad = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.nombre} {self.apellido} - {self.email}"
+        return f"{self.nombre} - {self.email}"
 
 class VentaReserva(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)

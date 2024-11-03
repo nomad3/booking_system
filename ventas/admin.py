@@ -220,7 +220,7 @@ class ProductoAdmin(admin.ModelAdmin):
 
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'email', 'telefono')
-    search_fields = ('nombre', 'apellido', 'email', 'telefono')  # Campos para buscar
+    search_fields = ('nombre', 'email', 'telefono')  # Eliminar 'apellido'
 
 class ServicioAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio_base', 'duracion', 'categoria', 'proveedor')
