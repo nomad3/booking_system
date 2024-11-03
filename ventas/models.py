@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 import random
 import string
+from django.db.models import Sum, F
 
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=100)
