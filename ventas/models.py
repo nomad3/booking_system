@@ -7,6 +7,8 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.db import transaction
+import random
+import string
 
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=100)
