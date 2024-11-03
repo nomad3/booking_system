@@ -15,4 +15,5 @@ urlpatterns = [
     path('auditoria-movimientos/', auditoria_movimientos_view, name='auditoria_movimientos'),  # Nueva vista de auditoría
     path('venta_reservas/', views.venta_reserva_list, name='venta_reserva_list'),
     path('venta_reservas/<int:pk>/', views.venta_reserva_detail, name='venta_reserva_detail'),
+    path('caja_diaria_recepcionistas/', views.caja_diaria_recepcionistas_view, name='caja_diaria_recepcionistas'),
 ]

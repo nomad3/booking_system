@@ -512,3 +512,95 @@ def caja_diaria_view(request):
     }
 
     return render(request, 'ventas/caja_diaria.html', context)
+
+def caja_diaria_recepcionistas_view(request):
+    # Lista de usuarios permitidos (puedes usar IDs o usernames)
+    usuarios_permitidos_usernames = ['Lina', 'Edson', 'Ernesto', 'Rafael']
+    usuarios_permitidos = User.objects.filter(username__in=usuarios_permitidos_usernames)
+
+    # Obtener rango de fechas desde los parámetros GET
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+    metodo_pago = request.GET.get('metodo_pago')  # Filtro de método de pago
+
+    # Establecer fechas por defecto (hoy) si no se proporcionan
+    today = timezone.localdate()
+    if not fecha_inicio:
+        fecha_inicio = today.strftime('%Y-%m-%d')
+    if not fecha_fin:
+        fecha_fin = today.strftime('%Y-%m-%d')
+
+    # Parsear las cadenas de fecha a objetos date
+    try:
+        fecha_inicio_parsed = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
+        fecha_fin_parsed = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
+    except ValueError:
+        fecha_inicio_parsed = today
+        fecha_fin_parsed = today
+
+    # Validar que fecha_inicio no es posterior a fecha_fin
+    if fecha_inicio_parsed > fecha_fin_parsed:
+        fecha_inicio_parsed, fecha_fin_parsed = fecha_fin_parsed, fecha_inicio_parsed
+        fecha_inicio, fecha_fin = fecha_fin, fecha_inicio
+
+    # Ajustar fecha_fin para incluir todo el día
+    fecha_fin_parsed_datetime = timezone.make_aware(datetime.combine(fecha_fin_parsed, datetime.max.time()))
+
+    # Obtener el usuario seleccionado del parámetro GET
+    usuario_id = request.GET.get('usuario')
+
+    # Obtener los usuarios permitidos para el filtro
+    usuarios = usuarios_permitidos
+
+    # Filtrar Pago basado en fecha_pago y usuarios permitidos
+    pagos = Pago.objects.filter(
+        fecha_pago__range=(fecha_inicio_parsed, fecha_fin_parsed_datetime),
+        usuario__in=usuarios_permitidos
+    )
+
+    # Filtrar los pagos por usuario si se ha seleccionado uno
+    if usuario_id:
+        pagos = pagos.filter(usuario_id=usuario_id)
+    else:
+        usuario_id = ''
+
+    # Filtrar por método de pago si se ha seleccionado uno
+    if metodo_pago:
+        pagos = pagos.filter(metodo_pago=metodo_pago)
+    else:
+        metodo_pago = ''
+
+    # Filtrar VentaReserva basado en fecha y usuarios permitidos
+    ventas = VentaReserva.objects.filter(
+        reservaservicios__fecha_agendamiento__range=(fecha_inicio_parsed, fecha_fin_parsed_datetime),
+        usuario__in=usuarios_permitidos
+    ).distinct()
+
+    # Calcular totales
+    total_ventas = ventas.aggregate(total=Sum('total'))['total'] or 0
+    total_pagos = pagos.aggregate(total=Sum('monto'))['total'] or 0
+
+    # Agrupar pagos por método de pago y contar transacciones
+    pagos_grouped = pagos.values('metodo_pago').annotate(
+        total_monto=Sum('monto'),
+        cantidad_transacciones=Count('id')
+    ).order_by('metodo_pago')
+
+    # Obtener los métodos de pago para el filtro
+    METODOS_PAGO = Pago.METODOS_PAGO
+
+    context = {
+        'ventas': ventas,
+        'pagos': pagos,
+        'total_ventas': total_ventas,
+        'total_pagos': total_pagos,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'pagos_grouped': pagos_grouped,
+        'usuarios': usuarios,
+        'usuario_id': usuario_id,
+        'metodo_pago': metodo_pago,
+        'METODOS_PAGO': METODOS_PAGO,
+    }
+
+    return render(request, 'ventas/caja_diaria_recepcionistas.html', context)
