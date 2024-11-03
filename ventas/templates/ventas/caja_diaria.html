@@ -38,8 +38,8 @@
         <label for="metodo_pago" class="mr-2">Método de Pago:</label>
         <select id="metodo_pago" name="metodo_pago" class="form-control">
             <option value="">-- Todos los Métodos --</option>
-            {% for metodo in METODOS_PAGO %}
-                <option value="{{ metodo }}" {% if metodo == metodo_pago %}selected{% endif %}>{{ metodo }}</option>
+            {% for codigo, nombre in METODOS_PAGO %}
+                <option value="{{ codigo }}" {% if codigo == metodo_pago %}selected{% endif %}>{{ nombre }}</option>
             {% endfor %}
         </select>
     </div>
