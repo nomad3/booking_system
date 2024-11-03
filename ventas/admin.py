@@ -196,6 +196,7 @@ class GiftCardAdmin(admin.ModelAdmin):
     search_fields = ('codigo', 'cliente_comprador__nombre', 'cliente_destinatario__nombre')
     list_filter = ('estado', 'fecha_emision', 'fecha_vencimiento')
     readonly_fields = ('codigo', 'monto_disponible')
+    autocomplete_fields = ['cliente_comprador', 'cliente_destinatario']  # Habilitar autocompletar
 
 class CategoriaProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre',)
@@ -207,7 +208,7 @@ class ProductoAdmin(admin.ModelAdmin):
 
 class ClienteAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'email', 'telefono')
-    search_fields = ['nombre', 'telefono', 'email']
+    search_fields = ('nombre', 'apellido', 'email', 'telefono')  # Campos para buscar
 
 class ServicioAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio_base', 'duracion', 'categoria', 'proveedor')
