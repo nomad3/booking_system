@@ -8,7 +8,15 @@ from django.db.models import Sum
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.forms import DateInput, TimeInput, Select
-from .models import Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago, Cliente, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente, Compra, DetalleCompra, GiftCard
+from .models import (
+    Proveedor, CategoriaProducto, Producto, VentaReserva, ReservaProducto, Pago,
+    Cliente, CategoriaServicio, Servicio, ReservaServicio, MovimientoCliente,
+    Compra, DetalleCompra, GiftCard
+)
+from .serializers import ReservaServicioSerializer
+from django.shortcuts import render
+from django.contrib import messages
+from django.core.exceptions import ValidationError
 
 # Personalización del título de la administración
 admin.site.site_header = _("Sistema de Gestión de Ventas")
@@ -19,7 +27,10 @@ admin.site.index_title = _("Bienvenido al Panel de Control")
 class ReservaServicioInlineForm(forms.ModelForm):
     class Meta:
         model = ReservaServicio
-        fields = ['servicio', 'fecha_agendamiento', 'cantidad_personas']
+        fields = ['servicio', 'fecha_agendamiento', 'cantidad_personas', 'estado']
+        widgets = {
+            'estado': forms.Select(attrs={'class': 'form-control'}),
+        }
 
     def clean_fecha_agendamiento(self):
         """
@@ -34,13 +45,15 @@ class ReservaServicioInlineForm(forms.ModelForm):
                 fecha_agendamiento = timezone.make_aware(fecha_agendamiento)  # Asegurarnos de que sea "aware"
             except ValueError:
                 raise forms.ValidationError("El formato de la fecha de agendamiento no es válido. Debe ser YYYY-MM-DD HH:MM.")
-
+        
         return fecha_agendamiento
 
 class ReservaServicioInline(admin.TabularInline):
     model = ReservaServicio
     form = ReservaServicioInlineForm
     extra = 1
+    fields = ['servicio', 'fecha_agendamiento', 'cantidad_personas', 'estado']
+    show_change_link = True  # Opcional, para facilitar cambios
 
 class ReservaProductoInline(admin.TabularInline):
     model = ReservaProducto
@@ -175,11 +188,51 @@ class ProveedorAdmin(admin.ModelAdmin):
 
 class DetalleCompraInline(admin.TabularInline):
     model = DetalleCompra
+    form = DetalleCompraForm
     extra = 1
     autocomplete_fields = ['producto']
-    fields = ['producto', 'descripcion', 'cantidad', 'precio_unitario']
-    readonly_fields = ['producto']
+    fields = ['producto', 'nuevo_producto', 'descripcion', 'cantidad', 'precio_unitario']
     show_change_link = False
+
+class DetalleCompraForm(forms.ModelForm):
+    nuevo_producto = forms.CharField(
+        max_length=100, 
+        required=False, 
+        label='Nuevo Producto',
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = DetalleCompra
+        fields = ['producto', 'nuevo_producto', 'descripcion', 'cantidad', 'precio_unitario']
+        widgets = {
+            'producto': forms.Select(attrs={'class': 'form-control'}),
+            'descripcion': forms.TextInput(attrs={'class': 'form-control'}),
+            'cantidad': forms.NumberInput(attrs={'class': 'form-control'}),
+            'precio_unitario': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        producto = cleaned_data.get('producto')
+        nuevo_producto = cleaned_data.get('nuevo_producto')
+
+        if not producto and not nuevo_producto:
+            raise ValidationError("Debe seleccionar un producto existente o ingresar uno nuevo.")
+
+        if nuevo_producto:
+            producto, created = Producto.objects.get_or_create(nombre=nuevo_producto)
+            cleaned_data['producto'] = producto
+
+        return cleaned_data
+
+DetalleCompraInlineFormSet = inlineformset_factory(
+    Compra,
+    DetalleCompra,
+    form=DetalleCompraForm,
+    extra=1,
+    can_delete=True
+)
 
 @admin.register(Compra)
 class CompraAdmin(admin.ModelAdmin):
@@ -204,11 +257,19 @@ class CompraAdmin(admin.ModelAdmin):
 
 @admin.register(GiftCard)
 class GiftCardAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'cliente_comprador', 'cliente_destinatario', 'monto_inicial', 'monto_disponible', 'fecha_emision', 'fecha_vencimiento', 'estado')
+    list_display = ('codigo', 'get_cliente_comprador_nombre', 'get_cliente_destinatario_nombre', 'monto_inicial', 'monto_disponible', 'fecha_emision', 'fecha_vencimiento', 'estado')
     search_fields = ('codigo', 'cliente_comprador__nombre', 'cliente_destinatario__nombre')
     list_filter = ('estado', 'fecha_emision', 'fecha_vencimiento')
     readonly_fields = ('codigo', 'monto_disponible')
-    autocomplete_fields = ['cliente_comprador', 'cliente_destinatario']  # Habilitar autocompletar
+    autocomplete_fields = ['cliente_comprador', 'cliente_destinatario']
+
+    def get_cliente_comprador_nombre(self, obj):
+        return obj.cliente_comprador.nombre if obj.cliente_comprador else '-'
+    get_cliente_comprador_nombre.short_description = 'Comprador'
+
+    def get_cliente_destinatario_nombre(self, obj):
+        return obj.cliente_destinatario.nombre if obj.cliente_destinatario else '-'
+    get_cliente_destinatario_nombre.short_description = 'Destinatario'
 
 class CategoriaProductoAdmin(admin.ModelAdmin):
     list_display = ('nombre',)
@@ -219,15 +280,17 @@ class ProductoAdmin(admin.ModelAdmin):
     list_filter = ('categoria',)  # Si tienes categorías
 
 class ClienteAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'email', 'telefono')
-    search_fields = ('nombre', 'email', 'telefono')  # Eliminar 'apellido'
+    list_display = ('nombre', 'celular', 'telefono')
+    search_fields = ('nombre', 'celular', 'telefono')
 
 class ServicioAdmin(admin.ModelAdmin):
     list_display = ('nombre', 'precio_base', 'duracion', 'categoria', 'proveedor')
 
 @admin.register(Pago)
 class PagoAdmin(admin.ModelAdmin):
-    list_display = ('venta_reserva', 'monto', 'metodo_pago', 'fecha_pago')
+    list_display = ('venta_reserva', 'monto', 'metodo_pago', 'fecha_pago', 'usuario')
+    inlines = [PagoInline]
+    readonly_fields = ('usuario',)
 
     def save_model(self, request, obj, form, change):
         if not obj.usuario:
@@ -240,7 +303,7 @@ class PagoAdmin(admin.ModelAdmin):
             descripcion = f"Se ha registrado un nuevo pago de {obj.monto} para la venta/reserva #{obj.venta_reserva.id}."
         super().save_model(request, obj, form, change)
         registrar_movimiento(obj.venta_reserva.cliente, tipo, descripcion, request.user)
-
+    
     def delete_model(self, request, obj):
         descripcion = f"Se ha eliminado el pago de {obj.monto} de la venta/reserva #{obj.venta_reserva.id}."
         registrar_movimiento(obj.venta_reserva.cliente, "Eliminación de Pago", descripcion, request.user)

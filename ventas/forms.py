@@ -1,5 +1,5 @@
 from django import forms
-from .models import ReservaProducto, Pago
+from .models import ReservaProducto, Pago, ReservaServicio  # Añadido ReservaServicio
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
@@ -45,7 +45,13 @@ class ReservaProductoForm(forms.ModelForm):
 class PagoInlineForm(forms.ModelForm):
     class Meta:
         model = Pago
-        fields = ['fecha_pago', 'monto', 'metodo_pago', 'giftcard', 'usuario']
+        fields = ['fecha_pago', 'monto', 'metodo_pago', 'giftcard']
+        widgets = {
+            'fecha_pago': forms.DateTimeInput(attrs={'class': 'form-control'}),
+            'monto': forms.NumberInput(attrs={'class': 'form-control'}),
+            'metodo_pago': forms.Select(attrs={'class': 'form-control'}),
+            'giftcard': forms.Select(attrs={'class': 'form-control'}),
+        }
 
     def clean(self):
         cleaned_data = super().clean()
@@ -65,3 +71,18 @@ class PagoInlineForm(forms.ModelForm):
                 raise ValidationError("No debe seleccionar una gift card para este método de pago.")
 
         return cleaned_data
+
+class ReservaServicioInlineForm(forms.ModelForm):
+    class Meta:
+        model = ReservaServicio
+        fields = ['servicio', 'fecha_agendamiento', 'cantidad_personas', 'estado']
+        widgets = {
+            'estado': forms.Select(attrs={'class': 'form-control'}),
+            'servicio': forms.Select(attrs={'class': 'form-control'}),
+            'fecha_agendamiento': forms.DateTimeInput(attrs={'class': 'form-control'}),
+            'cantidad_personas': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(ReservaServicioInlineForm, self).__init__(*args, **kwargs)
+        # Opcional: Personalizar la visualización del cliente si el formulario lo incluye
