@@ -375,23 +375,23 @@ class ReservaProducto(models.Model):
     def __str__(self):
         return f"{self.cantidad} x {self.producto.nombre} en Venta/Reserva #{self.venta_reserva.id}"
 
-   class ReservaServicio(models.Model):
-       ESTADO_CHOICES = [
-           ('pendiente', 'Pendiente'),
-           ('checkin', 'Check-in'),
-           ('checkout', 'Check-out'),
-       ]
+class ReservaServicio(models.Model):
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('checkin', 'Check-in'),
+        ('checkout', 'Check-out'),
+    ]
 
-       venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaservicios')
-       servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
-       fecha_agendamiento = models.DateTimeField(default=timezone.now)
-       cantidad_personas = models.PositiveIntegerField(default=1)
-       estado = models.CharField(
-           max_length=10,
-           choices=ESTADO_CHOICES,
-           default='pendiente',
-           verbose_name='Estado de Servicio'
-       )
+    venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaservicios')
+    servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
+    fecha_agendamiento = models.DateTimeField(default=timezone.now)
+    cantidad_personas = models.PositiveIntegerField(default=1)
+    estado = models.CharField(
+        max_length=10,
+        choices=ESTADO_CHOICES,
+        default='pendiente',
+        verbose_name='Estado de Servicio'
+    )
 
-       def __str__(self):
-           return f"{self.servicio.nombre} reservado para {self.fecha_agendamiento}"
+    def __str__(self):
+        return f"{self.servicio.nombre} reservado para {self.fecha_agendamiento}"
