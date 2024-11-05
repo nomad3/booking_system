@@ -1,11 +1,10 @@
-
 from rest_framework import viewsets
 from rest_framework.response import Response
 from django.db.models import Sum, Q, Count
 from django.contrib.auth.decorators import user_passes_test
 import csv
 from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from datetime import datetime, timedelta
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
@@ -30,6 +29,7 @@ from .serializers import (
     CategoriaServicioSerializer,
     VentaReservaSerializer
 )
+from .forms import ReservaServicioInlineForm
 
 def venta_reserva_list(request):
     # Get current date
@@ -105,80 +105,30 @@ def venta_reserva_detail(request, pk):
     }
     return render(request, 'ventas/venta_reserva_detail.html', context)
 
+@login_required
 def servicios_vendidos_view(request):
-    # Obtener la fecha actual con la zona horaria correcta
-    hoy = timezone.localdate()
+    servicios = ReservaServicio.objects.select_related('servicio__categoria', 'venta_reserva__cliente').all()
 
-    # Obtener los parámetros del filtro, usando la fecha actual por defecto
-    fecha_inicio = request.GET.get('fecha_inicio', hoy)
-    fecha_fin = request.GET.get('fecha_fin', hoy)
-    categoria_id = request.GET.get('categoria')
-    venta_reserva_id = request.GET.get('venta_reserva_id')
-
-    # Convertir las fechas de los parámetros a objetos de fecha si son strings
-    if isinstance(fecha_inicio, str):
-        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-
-    if isinstance(fecha_fin, str):
-        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
-
-    # Convertir las fechas de inicio y fin a objetos datetime con zona horaria local
-    fecha_inicio_dt = timezone.make_aware(datetime.combine(fecha_inicio, datetime.min.time()))
-    fecha_fin_dt = timezone.make_aware(datetime.combine(fecha_fin, datetime.max.time()))
-
-    # Consultar todos los servicios vendidos
-    servicios_vendidos = ReservaServicio.objects.select_related('venta_reserva__cliente', 'servicio__categoria')
-
-    # Filtrar por rango de fechas (usando __gte y __lte para comparar correctamente)
-    servicios_vendidos = servicios_vendidos.filter(fecha_agendamiento__gte=fecha_inicio_dt, fecha_agendamiento__lte=fecha_fin_dt)
-
-    # Filtrar por categoría de servicio si está presente
-    if categoria_id:
-        servicios_vendidos = servicios_vendidos.filter(servicio__categoria_id=categoria_id)
-
-    # Filtrar por ID de VentaReserva si está presente y es un número válido
-    if venta_reserva_id and venta_reserva_id.isdigit():
-        servicios_vendidos = servicios_vendidos.filter(venta_reserva__id=int(venta_reserva_id))
-
-    # Ordenar los servicios vendidos
-    servicios_vendidos = servicios_vendidos.order_by('-fecha_agendamiento__date', 'fecha_agendamiento__time')
-
-    # Obtener todas las categorías de servicio para el filtro
-    categorias = CategoriaServicio.objects.all()
-
-    # Sumar el monto total de todos los servicios vendidos que se están mostrando
-    total_monto_vendido = sum(servicio.servicio.precio_base * servicio.cantidad_personas for servicio in servicios_vendidos)
-
-    # Preparar los datos para la tabla
-    data = []
-    for servicio in servicios_vendidos:
-        total_monto = servicio.servicio.precio_base * servicio.cantidad_personas
-        fecha_agendamiento = timezone.localtime(servicio.fecha_agendamiento)
-
-        data.append({
-            'venta_reserva_id': servicio.venta_reserva.id,
-            'cliente_nombre': servicio.venta_reserva.cliente.nombre,
-            'categoria_servicio': servicio.servicio.categoria.nombre,
-            'servicio_nombre': servicio.servicio.nombre,
-            'fecha_agendamiento': fecha_agendamiento.date(),
-            'hora_agendamiento': fecha_agendamiento.time(),
-            'monto': servicio.servicio.precio_base,
-            'cantidad_personas': servicio.cantidad_personas,
-            'total_monto': total_monto
-        })
-
-    # Pasar los datos y las categorías a la plantilla
     context = {
-        'servicios': data,
-        'categorias': categorias,
-        'fecha_inicio': fecha_inicio,
-        'fecha_fin': fecha_fin,
-        'categoria_id': categoria_id,
-        'venta_reserva_id': venta_reserva_id,
-        'total_monto_vendido': total_monto_vendido
+        'servicios': servicios,
     }
 
     return render(request, 'ventas/servicios_vendidos.html', context)
+
+@login_required
+def actualizar_estado_servicio(request, servicio_id):
+    servicio = get_object_or_404(ReservaServicio, id=servicio_id)
+    
+    if request.method == 'POST':
+        nuevo_estado = request.POST.get('estado')
+        if nuevo_estado in dict(ReservaServicio.ESTADO_CHOICES).keys():
+            servicio.estado = nuevo_estado
+            servicio.save()
+            messages.success(request, "Estado actualizado correctamente.")
+        else:
+            messages.error(request, "Estado inválido.")
+    
+    return redirect('servicios_vendidos')
 
 class ProveedorViewSet(viewsets.ModelViewSet):
     queryset = Proveedor.objects.all()
@@ -431,72 +381,42 @@ def caja_diaria_view(request):
     # Obtener rango de fechas desde los parámetros GET
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
-    metodo_pago = request.GET.get('metodo_pago')  # Nuevo filtro
+    metodo_pago = request.GET.get('metodo_pago')
+    usuario_id = request.GET.get('usuario')
 
-    # Establecer fechas por defecto (hoy) si no se proporcionan
     today = timezone.localdate()
     if not fecha_inicio:
         fecha_inicio = today.strftime('%Y-%m-%d')
     if not fecha_fin:
         fecha_fin = today.strftime('%Y-%m-%d')
 
-    # Parsear las cadenas de fecha a objetos date
-    try:
-        fecha_inicio_parsed = datetime.strptime(fecha_inicio, '%Y-%m-%d').date()
-        fecha_fin_parsed = datetime.strptime(fecha_fin, '%Y-%m-%d').date()
-    except ValueError:
-        # Manejar errores de formato de fecha
-        fecha_inicio_parsed = today
-        fecha_fin_parsed = today
+    fecha_inicio_parsed = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+    fecha_fin_parsed = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
+    fecha_fin_parsed_datetime = timezone.make_aware(fecha_fin_parsed)
 
-    # Validar que fecha_inicio no es posterior a fecha_fin
-    if fecha_inicio_parsed > fecha_fin_parsed:
-        fecha_inicio_parsed, fecha_fin_parsed = fecha_fin_parsed, fecha_inicio_parsed
-        fecha_inicio, fecha_fin = fecha_fin, fecha_inicio
-
-    # Ajustar fecha_fin para incluir todo el día
-    fecha_fin_parsed_datetime = timezone.make_aware(datetime.combine(fecha_fin_parsed, datetime.min.time())) + timedelta(days=1)
-
-    # Obtener el usuario seleccionado del parámetro GET
-    usuario_id = request.GET.get('usuario')
-
-    # Obtener todos los usuarios para el filtro
-    usuarios = User.objects.all()
-
-    # Filtrar Pago basado en fecha_pago
     pagos = Pago.objects.filter(
-        fecha_pago__range=(fecha_inicio_parsed, fecha_fin_parsed_datetime)
+        fecha_pago__range=(fecha_inicio, fecha_fin_parsed_datetime)
     )
 
-    # Filtrar los pagos por usuario si se ha seleccionado uno
-    if usuario_id:
-        pagos = pagos.filter(usuario_id=usuario_id)
-    else:
-        usuario_id = ''
+    if usuario_id and usuario_id.isdigit():
+        pagos = pagos.filter(usuario__id=usuario_id)
 
-    # Filtrar por método de pago si se ha seleccionado uno
     if metodo_pago:
         pagos = pagos.filter(metodo_pago=metodo_pago)
-    else:
-        metodo_pago = ''
 
-    # Filtrar VentaReserva basado en ReservaServicio.fecha_agendamiento
     ventas = VentaReserva.objects.filter(
-        reservaservicios__fecha_agendamiento__range=(fecha_inicio_parsed, fecha_fin_parsed_datetime)
+        pagos__in=pagos
     ).distinct()
 
-    # Calcular totales
     total_ventas = ventas.aggregate(total=Sum('total'))['total'] or 0
     total_pagos = pagos.aggregate(total=Sum('monto'))['total'] or 0
 
-    # Agrupar pagos por método de pago y contar transacciones
-    pagos_grouped = pagos.values('metodo_pago').annotate(
+    pagos_grouped = pagos.values('metodo_pago', 'usuario__username').annotate(
         total_monto=Sum('monto'),
         cantidad_transacciones=Count('id')
-    ).order_by('metodo_pago')
+    ).order_by('metodo_pago', 'usuario__username')
 
-    # Obtener los métodos de pago para el filtro
-    METODOS_PAGO = Pago.METODOS_PAGO
+    usuarios = User.objects.filter(is_staff=True)  # Filtrar solo usuarios staff si aplica
 
     context = {
         'ventas': ventas,
@@ -507,9 +427,9 @@ def caja_diaria_view(request):
         'fecha_fin': fecha_fin,
         'pagos_grouped': pagos_grouped,
         'usuarios': usuarios,
-        'usuario_id': usuario_id,
-        'metodo_pago': metodo_pago,  # Añadir al contexto
-        'METODOS_PAGO': METODOS_PAGO,  # Añadir al contexto
+        'usuario_id': int(usuario_id) if usuario_id and usuario_id.isdigit() else '',
+        'metodo_pago': metodo_pago or '',
+        'METODOS_PAGO': Pago.METODOS_PAGO,
     }
 
     return render(request, 'ventas/caja_diaria.html', context)
@@ -554,8 +474,8 @@ def caja_diaria_recepcionistas_view(request):
         usuario__in=usuarios_permitidos
     )
 
-    if usuario_id:
-        pagos = pagos.filter(usuario_id=usuario_id)
+    if usuario_id and usuario_id.isdigit():
+        pagos = pagos.filter(usuario__id=usuario_id)
 
     if metodo_pago:
         pagos = pagos.filter(metodo_pago=metodo_pago)
@@ -591,3 +511,20 @@ def caja_diaria_recepcionistas_view(request):
     }
 
     return render(request, 'ventas/caja_diaria_recepcionistas.html', context)
+
+@login_required
+def crear_venta_reserva_view(request):
+    if request.method == 'POST':
+        form = VentaReservaForm(request.POST)
+        if form.is_valid():
+            venta_reserva = form.save()
+            messages.success(request, "Venta/Reserva creada correctamente.")
+            return redirect('venta_reserva_detail', pk=venta_reserva.pk)
+    else:
+        form = VentaReservaForm()
+
+    context = {
+        'form': form,
+    }
+
+    return render(request, 'ventas/crear_venta_reserva.html', context)
