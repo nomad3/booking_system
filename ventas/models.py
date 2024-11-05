@@ -26,7 +26,20 @@ class Compra(models.Model):
         ('tarjeta', 'Tarjeta de Crédito/Débito'),
         ('efectivo', 'Efectivo'),
         ('webpay', 'WebPay'),
-        # Añade otros métodos de pago según sea necesario
+        ('descuento', 'Descuento'),
+        ('giftcard', 'GiftCard'),
+        ('flow', 'FLOW'),
+        ('mercadopago', 'MercadoPago'),
+        ('scotiabank', 'Tranferencia ScotiaBank'),
+        ('bancoestado', 'Transferencia BancoEstado'),
+        ('cuentarut', 'Transferencia CuentaRut'),
+        ('machjorge', 'mach jorge'),
+        ('machalda', 'mach alda'),
+        ('bicegoalda', 'bicego alda'),
+        ('bcialda', 'bci alda'),
+        ('andesalda', 'andes alda'),
+        ('mercadopagoaremko', 'mercadopago aremko'),
+        ('scotiabankalda', 'scotiabank alda'),
     ]
 
     fecha_compra = models.DateField(default=timezone.now)
