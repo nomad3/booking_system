@@ -1,3 +1,4 @@
+
 from datetime import timedelta
 from django.contrib.auth.models import User
 from django.db import models
@@ -22,7 +23,7 @@ class Proveedor(models.Model):
 
 
 class Compra(models.Model):
-    METODOS_PAGO_CHOICES = [
+    METODOS_PAGO = [
         ('tarjeta', 'Tarjeta de Crédito/Débito'),
         ('efectivo', 'Efectivo'),
         ('webpay', 'WebPay'),
@@ -44,19 +45,16 @@ class Compra(models.Model):
 
     fecha_compra = models.DateField(default=timezone.now)
     proveedor = models.ForeignKey(Proveedor, on_delete=models.SET_NULL, null=True, blank=True)
-    metodo_pago = models.CharField(max_length=50, choices=METODOS_PAGO_CHOICES)
+    metodo_pago = models.CharField(max_length=50, choices=METODOS_PAGO)
     numero_documento = models.CharField(max_length=100, null=True, blank=True)
     total = models.DecimalField(max_digits=10, decimal_places=0, default=0)
 
-    def calcular_total(self):
-        total = self.detallecompra_set.aggregate(
-            total=models.Sum(models.F('cantidad') * models.F('precio_unitario'))
-        )['total'] or 0
-        self.total = total
-        self.save()
-    
     def __str__(self):
-        return f"Compra #{self.id} - {self.proveedor.nombre if self.proveedor else 'Sin Proveedor'}"
+        return f"Compra #{self.id} - {self.proveedor}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.calcular_total()
 
 class GiftCard(models.Model):
     ESTADO_CHOICES = [
@@ -178,9 +176,8 @@ class Servicio(models.Model):
 
 class Cliente(models.Model):
     nombre = models.CharField(max_length=100)
-    celular = models.CharField(max_length=20, blank=True, null=True)
-    telefono = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
+    email = models.EmailField()
+    telefono = models.CharField(max_length=20)
     documento_identidad = models.CharField(max_length=20, null=True, blank=True, verbose_name="ID/DNI/Passport/RUT")
     pais = models.CharField(max_length=100, null=True, blank=True)
     ciudad = models.CharField(max_length=100, null=True, blank=True)
@@ -389,22 +386,13 @@ class ReservaProducto(models.Model):
         return f"{self.cantidad} x {self.producto.nombre} en Venta/Reserva #{self.venta_reserva.id}"
 
 class ReservaServicio(models.Model):
-    ESTADO_CHOICES = [
-        ('pendiente', 'Pendiente'),
-        ('checkin', 'Check-in'),
-        ('checkout', 'Check-out'),
-    ]
-
     venta_reserva = models.ForeignKey(VentaReserva, on_delete=models.CASCADE, related_name='reservaservicios')
     servicio = models.ForeignKey(Servicio, on_delete=models.CASCADE)
     fecha_agendamiento = models.DateTimeField(default=timezone.now)
     cantidad_personas = models.PositiveIntegerField(default=1)
-    estado = models.CharField(
-        max_length=10,
-        choices=ESTADO_CHOICES,
-        default='pendiente',
-        verbose_name='Estado de Servicio'
-    )
 
     def __str__(self):
         return f"{self.servicio.nombre} reservado para {self.fecha_agendamiento}"
+
+    def calcular_precio(self):
+        return self.servicio.precio_base * self.cantidad_personas
