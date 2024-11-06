@@ -54,7 +54,6 @@ class ReservaProductoSerializer(serializers.ModelSerializer):
 
 class ReservaServicioSerializer(serializers.ModelSerializer):
     servicio = ServicioSerializer(read_only=True)
-    estado = serializers.ChoiceField(choices=ReservaServicio.ESTADO_CHOICES)
 
     class Meta:
         model = ReservaServicio
@@ -70,11 +69,10 @@ class PagoSerializer(serializers.ModelSerializer):
     ]
 
     metodo_pago = serializers.ChoiceField(choices=METODOS_PAGO)
-    usuario = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Pago
-        fields = ['id', 'venta_reserva', 'fecha_pago', 'monto', 'metodo_pago', 'usuario', 'giftcard']
+        fields = ['id', 'venta_reserva', 'fecha_pago', 'monto', 'metodo_pago']
         read_only_fields = ['venta_reserva', 'fecha_pago']
 
 
@@ -85,11 +83,10 @@ class VentaReservaSerializer(serializers.ModelSerializer):
     total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     pagado = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     saldo_pendiente = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    numero_documento_fiscal = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = VentaReserva
-        fields = ['id', 'cliente', 'productos', 'servicios', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado', 'pagos', 'numero_documento_fiscal']
+        fields = ['id', 'cliente', 'productos', 'servicios', 'fecha_reserva', 'total', 'pagado', 'saldo_pendiente', 'estado', 'pagos']
         read_only_fields = ['total', 'pagado', 'saldo_pendiente']
 
     def create(self, validated_data):
